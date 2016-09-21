@@ -29,10 +29,16 @@ public class Unit {
 		
 	}
 	
-	public int att(Unit enemy){
+	public int fight(Unit enemy){
 		if(Attack > enemy.get_Defence()){
 			enemy.set_Curr_HP( enemy.get_Curr_HP() - (Attack - enemy.get_Defence()) );
+		}else{
+			enemy.less();
+		}
+		if(enemy.get_Attack() > Defence){
 			Curr_HP = Curr_HP - (enemy.get_Attack() - Defence);
+		}else{
+			Curr_HP--;
 		}
 		if(enemy.get_Curr_HP() <= 0 && Curr_HP > 0){
 			Exp = Exp + 100 + (enemy.get_Lv() - Lv)*10;
@@ -44,9 +50,9 @@ public class Unit {
 		}else if(enemy.get_Curr_HP() > 0 && Curr_HP <= 0){
 			return 2; //only my unit destroyed
 		}else if(enemy.get_Curr_HP() <= 0 && Curr_HP <= 0){
-			return 3;
+			return 3; //both unit destroyed
 		}else{
-			return 0;
+			return 0; //no unit destroyed
 		}
 	}
 	
@@ -64,22 +70,22 @@ public class Unit {
  	public String get_type(){
 		return Type;
 	}
-	public int get_Max_HP(){
+	private int get_Max_HP(){
 		return Max_HP;
 	}
-	public int get_Curr_HP(){
+	private int get_Curr_HP(){
 		return Curr_HP;
 	}
-	public int get_BP(){
+	private int get_BP(){
 		return BP;
 	}
-	public int get_Attack(){
+	private int get_Attack(){
 		return Attack;
 	}
-	public int get_Defence(){
+	private int get_Defence(){
 		return Defence;
 	}
-	public int get_Lv(){
+	private int get_Lv(){
 		return Lv;
 	}
 	
@@ -105,5 +111,7 @@ public class Unit {
 		Lv = x;
 	}
 	
-
+	private void less(){
+		Curr_HP--;
+	}
 }

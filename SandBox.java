@@ -3,23 +3,24 @@ package client;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.Iterator;
+
 
 public class SandBox {
 	private ArrayList<Unit> attacker = new ArrayList<Unit>();
 	private ArrayList<Unit> defence = new ArrayList<Unit>();
 	
 	public void start(){
-		boolean end = true;
+		boolean end = false;
 		Scanner input = new Scanner(System.in);
 		System.out.println("Start SandBox Mode!");
 		System.out.println("Enter -h for help;");
 		System.out.println("-i to generate army");
 		System.out.println("-s to show you current army state;");
-		System.out.println("-a -x to assign unit,(replace x by a index of the unit);");
+		System.out.println("-g to start the game);");
 
-		while(end){
+		while(!end){
 			String st = input.next();
+			st.replaceAll("\\s+$", "");
 			switch(st){
 				case "-i":
 					System.out.println("Random generate army for both team?(Y/N)");
@@ -33,26 +34,41 @@ public class SandBox {
 						continue;
 					}
 				case "-h":
-					System.out.println("Enter -h for help, ");
-					System.out.println("enter -i to generate army");
-					System.out.println("-s to show you current army state");
-					System.out.println("-a x to assign unit,(replace x by a index of the unit) ");
+					System.out.println("Enter -h for help;");
+					System.out.println("-i to generate army");
+					System.out.println("-s to show you current army state;");
+					System.out.println("-g to start the game);");
 					continue;
 				case "-s":
-					//Iterator<Unit> Unit_it = attacker.iterator();
 					int i = 0;
 					while(i < attacker.size()){
+						System.out.println("attacker: ");
 						attacker.get(i).show_state();
 						i++;
 					}
+					i = 0;
+					while(i < defence.size()){
+						System.out.println("defence: ");
+						defence.get(i).show_state();
+						i++;
+					}
 					continue;
+				case "-g":
+					Game_Handler game = new Game_Handler(attacker, defence );
+					game.start(input);
+					end = true;
+					break;
+				default:
+					continue;
+					
 			}
 			
 		}
 		input.close();
+		System.out.println("Game Over Bye-Bye !");
 	}
 	
-	public void manual_input(Scanner input){
+	private void manual_input(Scanner input){
 		
 		System.out.println("Initializing attacker army ........  ");
 		for(int i=0; i<10; i++){
@@ -100,11 +116,11 @@ public class SandBox {
 
 	}
 
-	public void random_input(Scanner input){
+	private void random_input(Scanner input){
 		
 		Random generator = new Random();
 		System.out.println("Initializing attacker army ........ ");
-		for(int i=0; i<10; i++){
+		for(int i=0; i<5; i++){
 
 			System.out.println("Please enter Unit type: ");
 			String Type = input.next();
@@ -121,7 +137,7 @@ public class SandBox {
 			this.attacker.add(tmp);			
 		}
 		System.out.println("Initializing Defence army ........ ");
-		for(int i=0; i<10; i++){
+		for(int i=0; i<5; i++){
 
 			System.out.println("Please enter Unit type: ");
 			String Type = input.next();
