@@ -51,6 +51,7 @@ public class SandBoxGUI extends JPanel {
         jcomp7.setBounds (25, 100, 100, 140);
         jcomp8.setBounds (605, 90, 100, 140);
     }
+
     
     public static void main (String[] args) {
         JFrame frame = new JFrame ("SandBoxGUI");
