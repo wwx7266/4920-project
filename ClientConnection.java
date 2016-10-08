@@ -1,3 +1,4 @@
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -126,6 +127,24 @@ public class ClientConnection {
 	//used to send a message via chat
 	public String[] chatUp(String payload) throws IOException{
 		this.command = "chatUp##" + payload;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to add a friend to account
+	public String[] addFriend(String friend) throws IOException{
+		this.command = "friendOp##add##" + friend;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to remove a friend from the account
+	public String[] removeFriend(String friend) throws IOException{
+		this.command = "friendOp##delete##" + friend;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to retrieve current friends list from server
+	public String[] displayFriend() throws IOException{
+		this.command = "friendOp##display";
 		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
 		return this.result;
 	}
