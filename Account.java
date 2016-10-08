@@ -16,7 +16,7 @@ public class Account {
     
 
     
-	Account(){
+	public Account(){
 		
 	}
 	//will register given user if not in database, if user is in database then will return false
