@@ -92,7 +92,7 @@ public class Account {
 	    	stat.close();
 	    	conn.close();
 	}
-	//retrieves friends associated with a single individual (to test)
+	//retrieves friends associated with a single individual
 	public ArrayList<String> displayFriends(String login) throws Exception{
 		
 		ArrayList<String> returnResult = new ArrayList<String>();
@@ -127,8 +127,11 @@ public class Account {
 		
 		return returnResult;
 	}
-	//adds a name to the friends list(to test)
+	//adds a name to the friends list
 	public boolean addFriend(String login, String friend) throws Exception{
+		if(login.equals(friend)){
+			return false;
+		}
 		int userID = getID(login);
 		String command = "INSERT INTO friends (Id, Friend) VALUES ('"+userID+"', '"+friend+"')";
 		try {
@@ -139,13 +142,14 @@ public class Account {
 		return true;
 	}
 	
-	//delete friend association between user and friend (To Test)
+	//delete friend association between user and friend
 	public boolean deleteFriend(String login, String friend) throws Exception{
 		int userID = getID(login);
-		String command = "DELETE FROM friends WHERE Id = '"+userID+"' AND Friend = '"+friend+"')";
+		String command = "DELETE FROM friends WHERE Id = '"+userID+"' AND Friend = '"+friend+"'";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -163,7 +167,8 @@ public class Account {
 	    	stat = conn.createStatement();
 	    	stat.executeUpdate("create table friends( "
 	    			+ "Id int NOT NULL, "
-	    			+ "Friend varchar(30) BINARY NOT NULL "
+	    			+ "Friend varchar(30) BINARY NOT NULL, "
+	    			+ "UNIQUE (Id, Friend) "
 	    			+ ")");
 	    	
 	    	}catch(ClassNotFoundException e){
@@ -205,7 +210,7 @@ public class Account {
 	    	stat.close();
 	    	conn.close();	
 		}
-		//gets the DB id for a particular user (to test)
+		//gets the DB id for a particular user
 		public int getID(String login) throws Exception{
 			int returnResult = 0;
 			String command = "SELECT * " +
