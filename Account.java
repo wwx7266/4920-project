@@ -181,6 +181,166 @@ public class Account {
 	    	stat.close();
 	    	conn.close();
 	}
+	//army and unit functions(to test)
+	public boolean createUnit(String login, String type, String army) throws Exception{
+		//type initialized, (type, attack, defense, EXP)
+		String[] type1 = {"Swordsman","2", "2","0"};
+		String[] type2 = {"Archer","3", "1","0"};
+		String[] type3 = {"Knight","1", "3","0"};
+		String[] in = null;
+		//load unit type for input into DB
+		if(type.equals("Swordsman")){
+			in = type1;
+		}else if(type.equals("Archer")){
+			in = type2;
+		}else if(type.equals("Knight")){
+			in = type3;
+		} else {
+			return false;
+		}
+		//insert into db
+		int userID = getID(login);
+		String command = "INSERT INTO roster (Owner, UnitType, ArmyName, Attack, Defense, EXP) VALUES ('"+userID+"', '"+in[0]+"', '"+army+", '"+in[1]+"', '"+in[2]+"', '"+in[3]+"')";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	//creates an army given a starting unit type
+	public boolean createArmy(String login, String army, String initUnitType) throws Exception{
+		return createUnit(login, initUnitType, army);
+	}
+	//outputs a string representation of an army for a given user
+	public String displayArmy(String login) throws Exception{
+		String output = "";
+		String command = "SELECT * FROM roster WHERE Owner = '"+getID(login)+"'";
+		
+		Statement stat = null;
+	    Connection conn = null;
+	    ResultSet result = null;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		while(result.next()){
+			output = output + "##"+result.getString("UnitId")
+					+ "##" + result.getString("UnitName")
+					+ "##" + result.getString("UnitType")
+					+ "##" + result.getString("ArmyName")
+					+ "##" + result.getString("Attack")
+					+ "##" + result.getString("Defense")
+					+ "##" + result.getString("EXP");
+					
+		}
+		stat.close();
+		conn.close();
+		
+		return output;
+	}
+	//moves a unit between users given a new owner user and a new army name, if a new army for that user is
+	//specified, then that army is created with that unit as the sole occupant(useful when selling)
+	public boolean moveUnit(int unitID, String newOwner, String armyName) throws Exception{
+		
+		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "' AND ArmyName = '"+armyName+"' WHERE UnitId = '" + unitID + "'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	//moves an army between users given a new owner user (useful when selling)
+	public boolean moveArmy(String armyName,String newOwner, String newArmyName) throws Exception{
+		
+		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "' WHERE ArmyName = '" + newArmyName + "'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	//deletes a unit from the DB given its ID and the owner's user name
+	public boolean deleteUnit(String login, int unitID) throws Exception{
+		String command = "DELETE FROM roster WHERE UnitId = '"+unitID+"' AND Owner = '"+getID(login)+"'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	//deletes an army from the DB given its name and the owner's user name
+	public boolean deleteArmy(String login, String armyName) throws Exception{
+		String command = "DELETE FROM roster WHERE ArmyName = '"+armyName+"' AND Owner = '"+getID(login)+"'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	public boolean levelUnit(int unitID, int attackInc, int defenseInc, int EXPDec){
+		//problem may come from '' around number
+		String command = "UPDATE roster SET Attack = Attack + '" + attackInc + "' AND Defense = Defense + '"+defenseInc+"' AND EXP = EXP - '"+EXPDec+"' WHERE UnitID = '" + unitID + "'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	//Initialize DB for units and armies, shows units and what army they are assigned to
+	public void initialiseRoster() throws Exception{
+		Statement stat = null;
+	    Connection conn = null;
+		try{
+	    	Class.forName(jdbc_Driver);
+	    	String url = db_Address + db_Name;
+
+	    	conn = DriverManager.getConnection(url, userName, password);
+	    	stat = conn.createStatement();
+	    	stat.executeUpdate("create table roster( "
+	    			+ "UnitId int PRIMARY KEY NOT NULL AUTO_INCREMENT, "
+	    			+ "Owner int NOT NULL, "
+	    			+ "UnitName varchar(30), BINARY"
+	    			+ "UnitType varchar(30) NOT NULL, "
+	    			+ "ArmyName varchar(30) BINARY NOT NULL, "
+	    			+ "Attack int NOT NULL,"
+	    			+ "Defense int NOT NULL"
+	    			+ "EXP int NOT NULL"
+	    			+ ")");
+	    	
+	    	}catch(ClassNotFoundException e){
+	    		System.out.println("Class Not Found !");
+	    		e.printStackTrace();
+	    	}catch(SQLException e){
+	    		System.out.println("An error occure when excute SQL!");
+	    		e.printStackTrace();
+	    	} 
+	    	stat.close();
+	    	conn.close();
+	}
+	//end section to test
 	// function to execute SQL command (edit table e.g. insert, delete etc.) 
 		public void executeSQL(String command) throws Exception{
 			String jdbc_Driver = "com.mysql.jdbc.Driver";
@@ -210,6 +370,7 @@ public class Account {
 	    	stat.close();
 	    	conn.close();	
 		}
+		
 		//gets the DB id for a particular user
 		public int getID(String login) throws Exception{
 			int returnResult = 0;
@@ -243,5 +404,5 @@ public class Account {
 			conn.close();
 			
 			return returnResult;
-		}
+		}		
 }
