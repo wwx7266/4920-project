@@ -21,7 +21,7 @@ public class Account {
 	}
 	//will register given user if not in database, if user is in database then will return false
 	public boolean register(String login, String pswrd){
-		String command = "INSERT INTO account (Login, Password) VALUES ('"+login+"', '"+pswrd+"')";
+		String command = "INSERT INTO account (Login, Password, Level, gold) VALUES ('"+login+"', '"+pswrd+"', '0', '0')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -78,7 +78,9 @@ public class Account {
 	    	stat.executeUpdate("create table account( "
 	    			+ "Id int PRIMARY KEY NOT NULL AUTO_INCREMENT, "
 	    			+ "Login varchar(30) BINARY NOT NULL, "
-	    			+ "Password varchar(60) BINARY NOT NULL, "
+	    			+ "Password varchar(60) BINARY NOT NULL,"
+	    			+ "Level int NOT NULL, "
+	    			+ "Gold int Not NULL, "
 	    			+ "UNIQUE (Login) "
 	    			+ ")");
 	    	
@@ -181,7 +183,7 @@ public class Account {
 	    	stat.close();
 	    	conn.close();
 	}
-	//army and unit functions(to test)
+	//army and unit functions
 	public boolean createUnit(String login, String type, String army) throws Exception{
 		//type initialized, (type, attack, defense, EXP)
 		String[] type1 = {"Swordsman","2", "2","0"};
@@ -200,7 +202,7 @@ public class Account {
 		}
 		//insert into db
 		int userID = getID(login);
-		String command = "INSERT INTO roster (Owner, UnitType, ArmyName, Attack, Defense, EXP) VALUES ('"+userID+"', '"+in[0]+"', '"+army+", '"+in[1]+"', '"+in[2]+"', '"+in[3]+"')";
+		String command = "INSERT INTO roster (Owner, UnitType, ArmyName, Attack, Defense, EXP) VALUES ('"+userID+"', '"+in[0]+"', '"+army+"', '"+in[1]+"', '"+in[2]+"', '"+in[3]+"')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -264,9 +266,17 @@ public class Account {
 		return true;
 	}
 	//moves an army between users given a new owner user (useful when selling)
-	public boolean moveArmy(String armyName,String newOwner, String newArmyName) throws Exception{
+	public boolean moveArmy(String oldOwner, String armyName,String newOwner, String newArmyName) throws Exception{
 		
-		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "' WHERE ArmyName = '" + newArmyName + "'";
+		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "', ArmyName = '"+ newArmyName +"' WHERE UnitId IN ('";
+		ArrayList<String> IDList = unitIDFromArmy(oldOwner, armyName);
+		if(IDList.isEmpty()){
+			return false;
+		}
+		for(String ID : unitIDFromArmy(oldOwner, armyName)){
+			command = command  + ID +"', '";
+		}
+		command = command.substring(0, command.length() - 4) + "')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -274,6 +284,40 @@ public class Account {
 			return false;
 		}
 		return true;
+	}
+	//gets ID's of units in a particular army
+	public ArrayList<String> unitIDFromArmy(String owner, String armyName) throws Exception{
+		ArrayList<String> returnResult = new ArrayList<String>();
+		String command = "SELECT UnitID " +
+						 "FROM roster " +
+						 "WHERE Owner = '"+getID(owner)+"' AND ArmyName = '"+armyName+"'";
+		
+		Statement stat = null;
+	    Connection conn = null;
+	    ResultSet result = null;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		
+		while(result.next()){
+			returnResult.add(result.getString("UnitId"));
+		}
+		
+		stat.close();
+		conn.close();
+		
+		return returnResult;
 	}
 	//deletes a unit from the DB given its ID and the owner's user name
 	public boolean deleteUnit(String login, int unitID) throws Exception{
@@ -322,11 +366,11 @@ public class Account {
 	    	stat.executeUpdate("create table roster( "
 	    			+ "UnitId int PRIMARY KEY NOT NULL AUTO_INCREMENT, "
 	    			+ "Owner int NOT NULL, "
-	    			+ "UnitName varchar(30), BINARY"
+	    			+ "UnitName varchar(30) BINARY, "
 	    			+ "UnitType varchar(30) NOT NULL, "
 	    			+ "ArmyName varchar(30) BINARY NOT NULL, "
-	    			+ "Attack int NOT NULL,"
-	    			+ "Defense int NOT NULL"
+	    			+ "Attack int NOT NULL, "
+	    			+ "Defense int NOT NULL, "
 	    			+ "EXP int NOT NULL"
 	    			+ ")");
 	    	
