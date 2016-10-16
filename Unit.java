@@ -1,5 +1,3 @@
-package client;
-
 public class Unit {
 	static int WORRIOR_TYPE = 0;
 	static int LANCER_TYPE  = 1;
@@ -27,6 +25,19 @@ public class Unit {
 		Lv = lv;
 		Exp = 0;
 		
+	}
+	
+	public String getUnitName() {
+		return this.Name;
+	}
+	
+	public String getUnitDetail(String army_name) {
+		return "Type: " + Type + "\n"
+				 + "Name: " + Name + "\n"
+				 + "HP: " + Curr_HP +" " + Max_HP + "\n"
+				 + "Attack: " + Attack + "\n"
+				 + "Defence: " + Defence + "\n"
+				 + "Lv: " + Lv + "\n" + "Exp: " + Exp;	
 	}
 	
 	public int fight(Unit enemy){
