@@ -17,6 +17,8 @@ public class InGameHandle {
 	private Hashtable<String, Integer> ht;
 	private String curr_turn;
 	private String chosen_army;
+	private Unit curr_assigned_army;
+	private String battle_log;
 	//private String pre_turn_chosen_army;
 	
 	
@@ -42,12 +44,20 @@ public class InGameHandle {
 		return this.defence;
 	}
 	
+	public Unit getAssignedArmy() {
+		return curr_assigned_army;
+	}
+	
 	public void setClickedArmy(String chosen_army) {
 		this.chosen_army = chosen_army;
 	}
 	
 	public String getClickedArmy() {
 		return chosen_army;
+	}
+	
+	public String getAttackLog() {
+		return battle_log;
 	}
 	
 	public String showArmyState(String army_name) {
@@ -70,10 +80,8 @@ public class InGameHandle {
 			int index = 0;
 			index = ht.get(chosen_army);
 
+			curr_assigned_army = defence.get(index);
 			spot.def(defence.get(index));
-			//System.out.print("Unit :");
-			//defence.get(index).show_state();
-			//System.out.println(" has been assigned");
 			defence.remove(index);
 			
 			//renew hash
@@ -97,10 +105,8 @@ public class InGameHandle {
 			int index = 0;
 			index = ht.get(chosen_army);
 	
+			curr_assigned_army = attacker.get(index);
 			spot.att(attacker.get(index));
-			//System.out.print("Unit :");
-			//attacker.get(index).show_state();
-			//System.out.println(" has been assigned");
 			attacker.remove(index);
 			
 			//renew hash
@@ -160,6 +166,7 @@ public class InGameHandle {
 			showOperation.setText("Defence has not assigned any unit!");
 		}else{
 			int res = spot.get_assigened_def().fight(spot.get_assigened_att());
+			battle_log = spot.get_assigened_def().show_combat_log();
 			//System.out.format("res is %d", res);
 			showOperation.setText("res is " + Integer.toString(res) + "\n\n");
 			switch(res){
@@ -186,6 +193,7 @@ public class InGameHandle {
 			showOperation.setText("Attacker has not assigned any unit!");
 		}else{
 			int res = spot.get_assigened_att().fight(spot.get_assigened_def());
+			battle_log = spot.get_assigened_att().show_combat_log();
 			//System.out.format("res is %d", res);
 			showOperation.setText("res is " + Integer.toString(res) + "\n\n");
 			switch(res){

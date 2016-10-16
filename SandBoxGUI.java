@@ -9,9 +9,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.*;
 import javax.swing.event.*;
+
 
 
 public class SandBoxGUI extends JPanel {
@@ -24,7 +27,7 @@ public class SandBoxGUI extends JPanel {
     private JList jcomp5;
     private JTextArea jcomp6;
     private JTextArea jcomp7;
-    private JTextArea jcomp8;
+    //private JTextArea jcomp8;
     private JButton jcomp9;
     private JButton jcomp10;
     private JButton jcomp11;
@@ -32,7 +35,13 @@ public class SandBoxGUI extends JPanel {
 
     private InGameHandle gHandle;
     private DefaultListModel listModel;
+    private DefaultListModel armyModel;
     private JScrollPane statePane;
+    private JList assigned_army;
+    private JPanel assigned_army_pane;
+    private GameTimer gTimer;
+    //private Timer turn_timer;
+    private JScrollPane newstatePane; 
 
     public SandBoxGUI(JPanel p) {
     	pl = p;
@@ -48,7 +57,7 @@ public class SandBoxGUI extends JPanel {
         jcomp5 = new JList (listModel);
         jcomp6 = new JTextArea (5, 5);
         jcomp7 = new JTextArea (5, 5);
-        jcomp8 = new JTextArea (5, 5);
+        //jcomp8 = new JTextArea (5, 5);
         
         jcomp9 = new JButton ("Generator Army");
         jcomp10 = new JButton ("Assign");
@@ -61,6 +70,7 @@ public class SandBoxGUI extends JPanel {
         jcomp9.addActionListener(new genOffenceAction());
         jcomp10.addActionListener(new assignAction());
         jcomp11.addActionListener(new attackAction());
+        jcomp11.addActionListener(new combatLogAction());
 
         //adjust size and set layout
         setPreferredSize (new Dimension (1280, 960));
@@ -74,7 +84,7 @@ public class SandBoxGUI extends JPanel {
         add (jcomp5);
         add (jcomp6);
         add (jcomp7);
-        add (jcomp8);
+        //add (jcomp8);
         add (jcomp9);
         add (jcomp10);
         add (jcomp11);
@@ -87,19 +97,54 @@ public class SandBoxGUI extends JPanel {
         jcomp5.setBounds (220, 425, 350, 70);
         jcomp6.setBounds (160, 15, 405, 70);
         jcomp7.setBounds (25, 100, 100, 140);
-        jcomp8.setBounds (605, 90, 100, 140);
+        //jcomp8.setBounds (605, 90, 100, 140);
         jcomp9.setBounds (595, 240, 155, 60);
         jcomp10.setBounds (595, 300, 105, 60);
         jcomp11.setBounds (595, 370, 105, 60);
         
        
+        JScrollPane combat_log_Pane = new JScrollPane();
+        combat_log_Pane.add(jcomp6);
+        combat_log_Pane.setBounds(160, 15, 405, 70);
+        combat_log_Pane.setViewportView(jcomp6);
+        add(combat_log_Pane);  
         
         JScrollPane listPane = new JScrollPane();
         listPane.add(jcomp5);
         listPane.setBounds(220, 425, 350, 70);
         listPane.setViewportView(jcomp5);
         add(listPane);
+        
+        
+        gTimer = new GameTimer();
+        gTimer.setBounds(605, 90, 100, 140);
+        add(gTimer);
+        
+        //turn_timer = new Timer();
+        //turn_timer.schedule(new timeCheck(), 500);//check every 0.5 second
 
+    }
+    
+    
+    private class timeCheck extends TimerTask {
+        public void run() {
+
+            //repaint();//refresh
+            if(gTimer.getCurrTime().equals("exit")) {
+            	
+    			gHandle.changeTurn(jcomp7);
+    			jcomp3.setText("");
+    			showJList();
+    		
+    	    	if(statePane != null) {
+    		        Container parent = statePane.getParent();
+    		        parent.remove(statePane);
+    		        parent.revalidate();
+    		        parent.repaint();
+    		        statePane = null;
+    	    	}            	
+            }
+        }
     }
     
     
@@ -153,20 +198,52 @@ public class SandBoxGUI extends JPanel {
 	    	}    		
     	}
     }
+    
+    public void showAssignedArmy() {
+    	
+    	assigned_army_pane = new JPanel();
+		armyModel = new DefaultListModel();	    		
+		assigned_army = new JList(armyModel);
+		assigned_army_pane.add(assigned_army);
+		assigned_army.setBounds (210, 360, 40, 20);
+		assigned_army_pane.setBounds (210, 360, 50, 30);
+    	
+		assigned_army.addMouseListener(new assignedArmyClick());
+		armyModel.removeAllElements();
+		if(armyModel.getSize() == 0) {
+			armyModel.addElement(gHandle.getAssignedArmy().getUnitName());
+		} else {
+			armyModel.setElementAt(gHandle.getAssignedArmy().getUnitName(), 0);
+		}
+		add(assigned_army_pane);
+    }
+    
+    public void removeStatePane() {
+    	if(statePane != null) {
+	        Container parent = statePane.getParent();
+	        parent.remove(statePane);
+	        parent.revalidate();
+	        parent.repaint();
+	        statePane = null;
+    	}
+    	if(newstatePane != null) {
+	        Container parent = newstatePane.getParent();
+	        parent.remove(newstatePane);
+	        parent.revalidate();
+	        parent.repaint();
+	        newstatePane = null;
+    	}
+    }
 
 	
 	private class changeTurnAction implements ActionListener{
 		public void actionPerformed(ActionEvent a){
 
 			gHandle.changeTurn(jcomp7);
+			jcomp3.setText("");
 			showJList();
 		
-	    	if(statePane != null) {
-		        Container parent = statePane.getParent();
-		        parent.remove(statePane);
-		        parent.revalidate();
-		        parent.repaint();
-	    	}
+			removeStatePane();
 		}
 	}
 	
@@ -174,19 +251,17 @@ public class SandBoxGUI extends JPanel {
 		public void actionPerformed(ActionEvent a){
 	    	if(gHandle.getTurn().equals("defence_turn")) {
 	    		gHandle.defenceTurnAssign(jcomp3);
+	    		
+	    		showAssignedArmy();
 
 	    	} else if(gHandle.getTurn().equals("offence_turn")) {
 	    		
 	    		gHandle.offenceTurnAssign(jcomp3);
+	    		
+	    		showAssignedArmy();
 	    	}
 	    	showJList();
-	    	
-	    	if(statePane != null) {
-		        Container parent = statePane.getParent();
-		        parent.remove(statePane);
-		        parent.revalidate();
-		        parent.repaint();
-	    	}
+			removeStatePane();
 		}
 	}
 	
@@ -200,13 +275,14 @@ public class SandBoxGUI extends JPanel {
 	    		gHandle.offenceTurnAttack(jcomp3);
 	    	}
 	    	showJList();
-	    	
-	    	if(statePane != null) {
-		        Container parent = statePane.getParent();
-		        parent.remove(statePane);
-		        parent.revalidate();
-		        parent.repaint();
-	    	}
+			removeStatePane();
+		}
+	}
+	
+	private class combatLogAction implements ActionListener{
+		public void actionPerformed(ActionEvent a){
+
+			jcomp6.replaceSelection(gHandle.getAttackLog());
 		}
 	}
 	
@@ -218,15 +294,19 @@ public class SandBoxGUI extends JPanel {
 		}
 	}
 	
+	
 	private class jListSelect implements ListSelectionListener{
         public void valueChanged(ListSelectionEvent arg0) {
             if (!arg0.getValueIsAdjusting()) {
-              String army_name = jcomp5.getSelectedValue().toString();
-              
-              gHandle.setClickedArmy(army_name);
+            	String army_name = jcomp5.getSelectedValue().toString();
+
+            	if(army_name != null && army_name.length() != 0) {
+            		gHandle.setClickedArmy(army_name);
+            	}            
             }
         }
 	}
+
 	
 	private class jListClick implements MouseListener{
 	    public void mouseClicked(MouseEvent e){
@@ -269,11 +349,48 @@ public class SandBoxGUI extends JPanel {
 		}		
 	}
 	
-//    public static void main (String[] args) {
-//        JFrame frame = new JFrame ("SandBoxGUI");
-//        frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
-//        frame.getContentPane().add (new SandBoxGUI());
-//        frame.pack();
-//        frame.setVisible (true);
-//    }
+	
+	private class assignedArmyClick implements MouseListener{
+	    public void mouseClicked(MouseEvent e){
+	        if(e.getClickCount()==2){
+
+	            JTextArea jtaa = new JTextArea();
+	            jtaa.setBounds(250, 250, 300, 100);
+	            Unit curr_unit = gHandle.getAssignedArmy();
+	            jtaa.setText(curr_unit.getUnitDetail(curr_unit.getUnitName()));
+
+	            newstatePane = new JScrollPane();
+	            newstatePane.add(jtaa);
+	            newstatePane.setBounds(250, 250, 300, 100);
+	            newstatePane.setViewportView(jtaa);
+	            add(newstatePane);
+	            armyModel.removeAllElements();
+	        }
+	    }
+
+		@Override
+		public void mouseEntered(MouseEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void mouseExited(MouseEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void mousePressed(MouseEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			// TODO Auto-generated method stub
+			
+		}		
+	}
+
 }
