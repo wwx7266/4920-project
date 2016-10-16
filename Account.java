@@ -14,8 +14,6 @@ public class Account {
     String userName = "Game";
     String password = "admin";
     
-
-    
 	public Account(){
 		
 	}
@@ -64,6 +62,61 @@ public class Account {
 			return true;
 		}
 		return false;
+	}
+	//changes the amount of gold in a person's account, returns false if not enough funds or sql error
+	public boolean changeFunds(String login, int amount) throws Exception{
+		int funds = getFunds(login);
+		if((amount < 0) && (funds < amount)){
+			return false;
+		} else {
+			funds = funds + amount;
+		}
+		String command = "UPDATE account SET Gold = '"+funds+"' WHERE Login = '"+login+"'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
+	}
+	//gets current account balance, -1 if funds arn't available
+	public int getFunds(String login) throws NumberFormatException, SQLException{
+		int funds = -1;
+		String command = "SELECT Gold FROM account WHERE Login = '"+login+"'";
+		
+		Statement stat = null;
+	    Connection conn = null;
+	    ResultSet result = null;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		
+		while(result.next()){
+			funds = Integer.parseInt(result.getString("Gold"));
+		}
+		
+		stat.close();
+		conn.close();
+		return funds;
+	}
+	//increments the level of a particular player
+	public void incrementLevel(String login) throws Exception{
+		String command = "UPDATE account SET Level = Level + '1' WHERE Id = '" + getID(login) + "'";
+		try {
+			executeSQL(command);
+		} catch (Exception e) {
+		}
 	}
 	//Initializes table in database
 	public void initiateCredentials() throws Exception{
