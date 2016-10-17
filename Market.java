@@ -62,107 +62,65 @@ public class Market implements DataBase_interface{
 		}
 		return false;
 	}
-	//purchases a unit and deliverers it to the specified owner
-	public boolean buy(String login, int UnitId){
-		//retrieve price
-		//compare with purchaser gold
-		//if good, transfer unit and gold and return true
-		//else return false
+	//purchases a unit and deliverers it to the specified owner (to test)
+	public boolean buy(String login, int unitID, String armyName) throws Exception{
+		int price = getPrice(unitID);
+		//only go through with buy action if all transactions pass, else roll back
+		if(!this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price)){
+			return false;
+		}
+		if(this.accounts.changeFunds(login, price * -1)){
+			this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price * -1);
+			return false;
+		}
+		if(!this.accounts.moveUnit(unitID, login, armyName)){
+			this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price * -1);
+			this.accounts.changeFunds(login, price);
+		}
+		return true;
 	}
-	// displays all unit data and prices on sell list
-	public String display(){
+	// displays all unit data and prices on sell list(to test)
+	public String display() throws SQLException{
 		//join roster and market on UnitId and return relevant info
-	}
-	/*
-	// function to buy unit by player (delete a row in market table)
-	public boolean buy(int id, int money) throws Exception{
-		String command = "SELECT * FROM Market WHERE Id = " + String.valueOf(id);
+		//gets a string representation of a single unit
 		
-		String jdbc_Driver = "com.mysql.jdbc.Driver";
-	    
-		String db_Address = "jdbc:mysql://localhost/";
-		String db_Name    = "Game";
-	   
-	    String userName = "Game";
-	    String password = "admin";
-
-	    Statement stat = null;
+		String output = null;
+		String command = "SELECT * FROM roster a, market b where a.UnitId = b.UnitId";
+		
+		Statement stat = null;
 	    Connection conn = null;
 	    ResultSet result = null;
-    	try{
-    	Class.forName(jdbc_Driver);
-    	String url = db_Address+db_Name;
-    	conn = DriverManager.getConnection(url, userName, password);
-    	stat = conn.createStatement();
-    	result = stat.executeQuery(command);
-    	}catch(ClassNotFoundException e){
-    		System.out.println("Class Not Found !");
-    		e.printStackTrace();
-    	}catch(SQLException e){
-    		System.out.println("An error occure when excute SQL!");
-    		e.printStackTrace();
-    	} 
-		if(result.getInt("Price") > money){
-			System.out.println("Not Enough Money!");
-	    	stat.close();
-	    	conn.close();
-			return false;
-		}else{
-			command = "DELETE FROM Market WHERE Id = " + String.valueOf(id);
-	    	stat.close();
-	    	conn.close();
-			executeSQL(command);
-			return true;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		while(result.next()){
+			output = "##" + result.getString("UnitId")
+					+ "##" + result.getString("UnitName")
+					+ "##" + result.getString("UnitType")
+					+ "##" + result.getString("ArmyName")
+					+ "##" + result.getString("Attack")
+					+ "##" + result.getString("Defense")
+					+ "##" + result.getString("EXP")
+					+ "##" + result.getString("Price");
+					
 		}
+		stat.close();
+		conn.close();
+		
+		return output;
 	}
 	
-	// function to search item by given type and print out result	
-	public void search_item(String item ) throws Exception{
-		String command = "Select * FROM market WHERE Unit_type = '" + item + "'";
-		//ResultSet result =  search_data(command);
-		//test
-		String jdbc_Driver = "com.mysql.jdbc.Driver";
-	    
-		String db_Address = "jdbc:mysql://localhost/";
-		String db_Name    = "Game";
-	   
-	    String userName = "Game";
-	    String password = "admin";
-
-	    Statement stat = null;
-	    Connection conn = null;
-	    ResultSet result = null;
-    	try{
-    	Class.forName(jdbc_Driver);
-    	String url = db_Address+db_Name;
-    	conn = DriverManager.getConnection(url, userName, password);
-    	stat = conn.createStatement();
-    	result = stat.executeQuery(command);
-		//end test
-		while (result.next())
-	        {
-	            System.out.println(result.getInt("id") 
-	            				   + " Unit type: " 
-	            				   + result.getString("Unit_type") 
-	            				   + " Unit_name: "
-	            				   + result.getString("Unit_name")
-	            				   + " Price: "
-	            				   + result.getInt("price"));
-	        }
-    	}
-    	//start test
-    	catch(ClassNotFoundException e){
-    		System.out.println("Class Not Found !");
-    		e.printStackTrace();
-    	}catch(SQLException e){
-    		System.out.println("An error occure when excute SQL!");
-    		e.printStackTrace();
-    	} 
-    	stat.close();
-    	conn.close();
-    	//end test
-	}
-	*/
 	// function to initialize a database and create table call Market
 	public void createDatabase() throws Exception{
 		 
@@ -251,6 +209,73 @@ public class Market implements DataBase_interface{
     	stat.close();
     	conn.close();	
     	return result;
-	}	
+	}
+	//get price of a target unit
+	public int getPrice(int unitID) throws Exception{
+		int returnResult = 0;
+		String command = "SELECT * " +
+						 "FROM market " +
+						 "WHERE UnitId = '"+unitID+"'";
 		
+		Statement stat = null;
+	    Connection conn = null;
+	    ResultSet result = null;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		
+		while(result.next()){
+			returnResult = Integer.parseInt(result.getString("Price"));
+		}
+		
+		stat.close();
+		conn.close();
+		
+		return returnResult;
+	}
+	//get the ownerID of a target unit
+	public int getOwner(int unitID) throws Exception{
+		int returnResult = 0;
+		String command = "SELECT * " +
+						 "FROM market " +
+						 "WHERE UnitId = '"+unitID+"'";
+		
+		Statement stat = null;
+	    Connection conn = null;
+	    ResultSet result = null;
+		try{
+		Class.forName(jdbc_Driver);
+		String url = db_Address+db_Name;
+		conn = DriverManager.getConnection(url, userName, password);
+		stat = conn.createStatement();
+		result = stat.executeQuery(command);
+		
+		}catch(ClassNotFoundException e){
+			System.out.println("Class Not Found !");
+			e.printStackTrace();
+		}catch(SQLException e){
+			System.out.println("An error occure when excute SQL!");
+			e.printStackTrace();
+		} 
+		
+		while(result.next()){
+			returnResult = Integer.parseInt(result.getString("Owner"));
+		}
+		
+		stat.close();
+		conn.close();
+		
+		return returnResult;
+	}	
 }
