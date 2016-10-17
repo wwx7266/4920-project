@@ -1,3 +1,5 @@
+package Server;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -305,6 +307,7 @@ public class Account {
 		
 		return output;
 	}
+
 	//moves a unit between users given a new owner user and a new army name, if a new army for that user is
 	//specified, then that army is created with that unit as the sole occupant(useful when selling)
 	public boolean moveUnit(int unitID, String newOwner, String armyName) throws Exception{
@@ -501,5 +504,106 @@ public class Account {
 			conn.close();
 			
 			return returnResult;
-		}		
+		}
+		//retrieves the current amount of gold in the user's account
+		public int getGold(String login) throws Exception{
+			int returnResult = 0;
+			String command = "SELECT * " +
+							 "FROM Account " +
+							 "WHERE Login = '"+login+"'";
+			
+			Statement stat = null;
+		    Connection conn = null;
+		    ResultSet result = null;
+			try{
+			Class.forName(jdbc_Driver);
+			String url = db_Address+db_Name;
+			conn = DriverManager.getConnection(url, userName, password);
+			stat = conn.createStatement();
+			result = stat.executeQuery(command);
+			
+			}catch(ClassNotFoundException e){
+				System.out.println("Class Not Found !");
+				e.printStackTrace();
+			}catch(SQLException e){
+				System.out.println("An error occure when excute SQL!");
+				e.printStackTrace();
+			} 
+			
+			while(result.next()){
+				returnResult = Integer.parseInt(result.getString("Gold"));
+			}
+			
+			stat.close();
+			conn.close();
+			
+			return returnResult;
+		}	
+		//retrieves the current level of the target account
+		public int getLevel(String login) throws Exception{
+			int returnResult = 0;
+			String command = "SELECT * " +
+							 "FROM Account " +
+							 "WHERE Login = '"+login+"'";
+			
+			Statement stat = null;
+		    Connection conn = null;
+		    ResultSet result = null;
+			try{
+			Class.forName(jdbc_Driver);
+			String url = db_Address+db_Name;
+			conn = DriverManager.getConnection(url, userName, password);
+			stat = conn.createStatement();
+			result = stat.executeQuery(command);
+			
+			}catch(ClassNotFoundException e){
+				System.out.println("Class Not Found !");
+				e.printStackTrace();
+			}catch(SQLException e){
+				System.out.println("An error occure when excute SQL!");
+				e.printStackTrace();
+			} 
+			
+			while(result.next()){
+				returnResult = Integer.parseInt(result.getString("Level"));
+			}
+			
+			stat.close();
+			conn.close();
+			
+			return returnResult;
+		}	
+		public String getLogin(int ID) throws Exception{
+			String returnResult = null;
+			String command = "SELECT * " +
+							 "FROM Account " +
+							 "WHERE Id = '"+ID+"'";
+			
+			Statement stat = null;
+		    Connection conn = null;
+		    ResultSet result = null;
+			try{
+			Class.forName(jdbc_Driver);
+			String url = db_Address+db_Name;
+			conn = DriverManager.getConnection(url, userName, password);
+			stat = conn.createStatement();
+			result = stat.executeQuery(command);
+			
+			}catch(ClassNotFoundException e){
+				System.out.println("Class Not Found !");
+				e.printStackTrace();
+			}catch(SQLException e){
+				System.out.println("An error occure when excute SQL!");
+				e.printStackTrace();
+			} 
+			
+			while(result.next()){
+				returnResult = result.getString("Login");
+			}
+			
+			stat.close();
+			conn.close();
+			
+			return returnResult;
+		}	
 }
