@@ -19,12 +19,14 @@ public class InGameHandle {
 	private String chosen_army;
 	private Unit curr_assigned_army;
 	private String battle_log;
+	private boolean enemy_assign;
 	//private String pre_turn_chosen_army;
 	
 	
-	public InGameHandle() {
+	public InGameHandle(JTextArea showOperation) {
 		ht = new Hashtable<String, Integer>();
 		setTurn("defence_turn");
+		showOperation.setText("defence_turn");
 	}
 	
 	
@@ -34,6 +36,14 @@ public class InGameHandle {
 	
 	public String getTurn() {
 		return this.curr_turn;
+	}
+	
+	public void setEnemyAssign(boolean flag) {
+		this.enemy_assign = flag;
+	}
+	
+	public boolean getEnemyAssign() {
+		return this.enemy_assign;
 	}
 	
 	public ArrayList<Unit> getAttacker() {

@@ -32,7 +32,8 @@ public class GameTimer extends JPanel {
     }
             
     public void refresh(){
-            t=30;//重置计数器
+        t=30;//重置计数器
+        gTurn = "in_time";
     }
     
     
