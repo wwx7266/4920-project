@@ -1,6 +1,3 @@
-
-
-
 import java.io.File;
 import java.io.IOException;
 import java.awt.*;
@@ -20,7 +17,7 @@ public class MainMenuUI extends JPanel{
     private JLabel tit;
 		
 	private JTextField tf1; 
-	private JTextField tf2; 
+	private javax.swing.JPasswordField jPasswordField1; 
 	
 	private JLabel lb1; 
 	private JLabel lb2; 
@@ -162,12 +159,13 @@ public class MainMenuUI extends JPanel{
 		lb2 = new JLabel("Password:" );  
 		
 		tf1=new JTextField(20);  
-		tf2=new JTextField(20); 
+		jPasswordField1 = new javax.swing.JPasswordField();
 		
 		mid.add(lb1, c1);  
 		mid.add(tf1, c2);  
 		mid.add(lb2, c1);  
-		mid.add(tf2, c2); 
+		mid.add(jPasswordField1, c2);
+		
 		lb1.setFont(myfont.deriveFont(Font.BOLD, 28f));
 		lb1.setForeground(new Color(195, 195, 195));
 		lb2.setFont(myfont.deriveFont(Font.BOLD, 28f));
@@ -259,14 +257,14 @@ public class MainMenuUI extends JPanel{
 	private class loginAction implements ActionListener{
 		public void actionPerformed(ActionEvent a){
 			String username = tf1.getText();
-			String password = tf2.getText();
+			String password = jPasswordField1.getText();
 			System.out.println(username + ' ' + password);
 			String message = "Login#" + username + "#" + password;
 			ChatterClient client = new ChatterClient();
 			String[] recv = client.send(message).split("#");
 			if(recv[2].equalsIgnoreCase("fail")){
 				tf1.setText("");
-				tf2.setText("");
+				jPasswordField1.setText("");
 				System.out.println("Login FAIL!");
 			}else if(recv[2].equalsIgnoreCase("success")){
 				//PanelContainer.setVisible(false);
@@ -281,7 +279,7 @@ public class MainMenuUI extends JPanel{
 	private class registeAction implements ActionListener{
 		public void actionPerformed(ActionEvent a){
 			String username = tf1.getText();
-			String password = tf2.getText();
+			String password = jPasswordField1.getText();
 			System.out.println(username + ' ' + password);
 			String message = "Registe#" + username + "#" + password;
 			ChatterClient client = new ChatterClient();
