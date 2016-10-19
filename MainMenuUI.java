@@ -1,5 +1,9 @@
+
+
+
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -17,7 +21,7 @@ public class MainMenuUI extends JPanel{
     private JLabel tit;
 		
 	private JTextField tf1; 
-	private javax.swing.JPasswordField jPasswordField1; 
+	private JTextField tf2; 
 	
 	private JLabel lb1; 
 	private JLabel lb2; 
@@ -159,13 +163,12 @@ public class MainMenuUI extends JPanel{
 		lb2 = new JLabel("Password:" );  
 		
 		tf1=new JTextField(20);  
-		jPasswordField1 = new javax.swing.JPasswordField();
+		tf2=new JTextField(20); 
 		
 		mid.add(lb1, c1);  
 		mid.add(tf1, c2);  
 		mid.add(lb2, c1);  
-		mid.add(jPasswordField1, c2);
-		
+		mid.add(tf2, c2); 
 		lb1.setFont(myfont.deriveFont(Font.BOLD, 28f));
 		lb1.setForeground(new Color(195, 195, 195));
 		lb2.setFont(myfont.deriveFont(Font.BOLD, 28f));
@@ -257,19 +260,63 @@ public class MainMenuUI extends JPanel{
 	private class loginAction implements ActionListener{
 		public void actionPerformed(ActionEvent a){
 			String username = tf1.getText();
-			String password = jPasswordField1.getText();
+			String password = tf2.getText();
 			System.out.println(username + ' ' + password);
 			String message = "Login#" + username + "#" + password;
 			ChatterClient client = new ChatterClient();
 			String[] recv = client.send(message).split("#");
 			if(recv[2].equalsIgnoreCase("fail")){
 				tf1.setText("");
-				jPasswordField1.setText("");
+				tf2.setText("");
 				System.out.println("Login FAIL!");
 			}else if(recv[2].equalsIgnoreCase("success")){
-				//PanelContainer.setVisible(false);
-				//removeAll();
-				//add(tf1);
+				message = "UserLoading#"+username;
+				Player.UserName = username;
+				String[] armyinfo = client.send(message).split("#");
+				for(int i=0; i< armyinfo.length; i++){
+				System.out.print("info is: " +armyinfo[i] + "\n");}
+				if(armyinfo[2].length() == 0){
+					Random generator = new Random();
+					for(int i=0; i<5; i++){
+						String Type = "Army_" + Integer.toString(i+6);
+						
+						int Max_HP = generator.nextInt(15);
+						while(Max_HP == 0){
+							Max_HP = generator.nextInt(15);
+						}
+						
+						int Attack = generator.nextInt(10);
+						while(Attack == 0){
+							Attack = generator.nextInt(15);
+						}
+
+						int Lv = 1;
+						
+						message = "newunit#"+username+"#"+
+								  Type+
+								  "%"+Max_HP+
+								  "%"+Attack+
+								  "%"+Lv;
+						String[] result = client.send(message).split("#");
+						if(result[1].equalsIgnoreCase("success")){
+							Unit tmp = new Unit(Type, Max_HP, Attack, Lv);						
+							Player.Army.add(tmp);	
+						}			
+					}
+				}else{
+					System.out.print("String is :" + armyinfo[2]+"\n");
+					String[] Units = armyinfo[2].split("&");
+					for(int i=0; i<Units.length-1; i++){
+						System.out.print("String is :" + Units[i]+"\n");
+						String[] Unit = Units[i].split("%");
+						String Type = Unit[0];
+						int Max_HP = Integer.parseInt(Unit[1]);
+						int Attack = Integer.parseInt(Unit[2]);
+						int Lv = Integer.parseInt(Unit[3]);
+						Unit tmp = new Unit(Type, Max_HP, Attack, Lv);						
+						Player.Army.add(tmp);
+					}
+				}
 				paintGameUI();
 				System.out.println("Login SUCCESS!");
 			}
@@ -279,20 +326,21 @@ public class MainMenuUI extends JPanel{
 	private class registeAction implements ActionListener{
 		public void actionPerformed(ActionEvent a){
 			String username = tf1.getText();
-			String password = jPasswordField1.getText();
+			String password = tf2.getText();
 			System.out.println(username + ' ' + password);
 			String message = "Registe#" + username + "#" + password;
 			ChatterClient client = new ChatterClient();
-			//String[] recv = client.send(message).split("#");
+			String[] recv = client.send(message).split("#");
 			System.out.println(client.send(message));
-//			if(recv[2].equalsIgnoreCase("fail")){
-//				tf1.setText("");
-//				tf2.setText("");
-//				System.out.println("Registe FAIL!");
-//			}else if(recv[2].equalsIgnoreCase("success")){
-//				paintGameUI();
-//				System.out.println("Registe SUCCESS!");
-//			}
+			if(recv[2].equalsIgnoreCase("fail")){
+				tf1.setText("");
+				tf2.setText("");
+				System.out.println("Registe FAIL!");
+			}else if(recv[2].equalsIgnoreCase("success")){
+				tf1.setText("Registe SUCCESS!");
+				tf2.setText("");
+				System.out.println("Registe SUCCESS!");
+			}
 		}
 	}
 	
