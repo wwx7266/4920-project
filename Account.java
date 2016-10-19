@@ -16,8 +16,15 @@ public class Account {
     String userName = "Game";
     String password = "admin";
     
+    Market market = null;
+    
+	public Account(Market market){
+		this.market = market;
+	}
 	public Account(){
-		
+	}
+	public void addMarket(Market market){
+		this.market = market;
 	}
 	//will register given user if not in database, if user is in database then will return false
 	public boolean register(String login, String pswrd){
@@ -307,6 +314,48 @@ public class Account {
 		
 		return output;
 	}
+	//outputs an array list representation of an army for a given user (to test)
+		public ArrayList<String[]> displayArmyBattle(String login, String armyName) throws Exception{
+			ArrayList<String[]> output = new ArrayList<String[]>();
+			String command = "SELECT * FROM roster WHERE Owner = '"+getID(login)+"' AND ArmyName = '"+armyName+"' AND UnitId NOT IN"
+					+ "(SELECT UnitId FROM market)";
+			
+			Statement stat = null;
+		    Connection conn = null;
+		    ResultSet result = null;
+			try{
+			Class.forName(jdbc_Driver);
+			String url = db_Address+db_Name;
+			conn = DriverManager.getConnection(url, userName, password);
+			stat = conn.createStatement();
+			result = stat.executeQuery(command);
+			
+			}catch(ClassNotFoundException e){
+				System.out.println("Class Not Found !");
+				e.printStackTrace();
+			}catch(SQLException e){
+				System.out.println("An error occure when excute SQL!");
+				e.printStackTrace();
+			} 
+			while(result.next()){
+				String[] unit = new String[7];
+				unit[0] = result.getString("UnitId");
+				unit[1] = result.getString("UnitName");
+				unit[2] = result.getString("UnitType");
+				unit[3] = result.getString("ArmyName");
+				unit[4] = result.getString("Attack");
+				unit[5] = result.getString("Defense");
+				unit[6] = result.getString("EXP");
+				//exclude unit form battle if it is for sale
+				if(!market.isOnMarketList(Integer.parseInt(unit[0]))){
+					output.add(unit);
+				}
+			}
+			stat.close();
+			conn.close();
+			
+			return output;
+		}
 
 	//moves a unit between users given a new owner user and a new army name, if a new army for that user is
 	//specified, then that army is created with that unit as the sole occupant(useful when selling)
