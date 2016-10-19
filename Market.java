@@ -122,7 +122,7 @@ public class Market implements DataBase_interface{
 	}
 	
 	// function to initialize a database and create table call Market
-	public void createDatabase() throws Exception{
+	public void initialiseMarket() throws Exception{
 		 
 		Statement stat = null;
 	    Connection conn = null;
@@ -277,5 +277,11 @@ public class Market implements DataBase_interface{
 		conn.close();
 		
 		return returnResult;
+	}
+
+	@Override
+	public void createDatabase() throws Exception {
+		// TODO Auto-generated method stub
+		
 	}	
 }
