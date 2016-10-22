@@ -223,7 +223,7 @@ public class RankedMatchGUI extends JPanel {
         createCustomUnitButton.setBounds (225, 645 + offsety, 180, 60);
         quitButton.setBounds 		(740 + offsetx, 645 + offsety, 180, 60);
         
-        enemyArmyLabel.setBounds 	(335 + offsetx, 85 + (offsety/2), 250, 25);
+        enemyArmyLabel.setBounds 	(335 + offsetx, 85 , 250, 25);
         yourArmyLabel.setBounds 	(335 + offsetx, 410 + (offsety/2), 250, 25);
         enemyUnitLabel.setBounds 	(390 + offsetx, 330 + (offsety/2), 250, 25);
         playerUnitLabel.setBounds 	(390 + offsetx, 370 + (offsety/2), 250, 25);
