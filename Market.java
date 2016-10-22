@@ -3,7 +3,7 @@ package Server;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class Market{
+public class Market implements DataBase_interface{
 	String jdbc_Driver = "com.mysql.jdbc.Driver";
     
 	String db_Address = "jdbc:mysql://localhost/";
@@ -69,30 +69,16 @@ public class Market{
 		if(!this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price)){
 			return false;
 		}
-		if(!this.accounts.changeFunds(login, price * -1)){
+		if(this.accounts.changeFunds(login, price * -1)){
 			this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price * -1);
 			return false;
 		}
 		if(!this.accounts.moveUnit(unitID, login, armyName)){
 			this.accounts.changeFunds(this.accounts.getLogin(this.getOwner(unitID)), price * -1);
 			this.accounts.changeFunds(login, price);
-			return false;
-		}
-		remove(unitID);
-		return true;
-	}
-	private boolean remove(int unitID) {
-		String command = "DELETE FROM market WHERE UnitId = '"+unitID+"'";
-		try {
-			executeSQL(command);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
 		}
 		return true;
-		
 	}
-
 	// displays all unit data and prices on sell list(to test)
 	public String display() throws SQLException{
 		//join roster and market on UnitId and return relevant info
@@ -292,4 +278,10 @@ public class Market{
 		
 		return returnResult;
 	}
+
+	@Override
+	public void createDatabase() throws Exception {
+		// TODO Auto-generated method stub
+		
+	}	
 }

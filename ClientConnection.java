@@ -1,173 +1,192 @@
-package Server;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ServerSocket;
+import java.io.PrintWriter;
 import java.net.Socket;
-import java.sql.SQLException;
 import java.util.ArrayList;
 
-import Server.Account;
 
-public class ServerConnection implements Runnable{
+public class ClientConnection {
 	
-	ServerSocket server = null;
-	int serverPort = 2500;
-	Account accounts = null;
-	Market markets = null;
-	BattleMgmt battleManager = null;
-	//Initializes a server with a specified port
-	ServerConnection(int serverPort, Account accounts, Market markets, BattleMgmt battleManager){
-		this.accounts = accounts;
-		this.markets = markets;
-		this.battleManager = battleManager;
-		try {
-			this.server = new ServerSocket(serverPort);
-		} catch (IOException e) {
-			System.out.println("couldn't open a socket on port " + serverPort);
-			System.exit(0);
-			return;
-		}
+	String user = null;
+	String password = null;
+	String serverAddress = null;
+	int serverPort = 25000;
+	String command = null;
+	String[] result = null;
+	boolean connect = false;
+	Connection connection = null;
+	
+	//ClientConstructor that may take the user name, password, server address and server port
+	ClientConnection(String user, String password, String serverAddress, int serverPort){
+		//Initialization of user credentials
+		this.user = user;
+		this.password = password;
+		//Establishment of server connection
+		this.serverAddress = serverAddress;
+		this.serverPort = serverPort;
+		this.connection = new Connection(this.serverAddress, this.serverPort);
 	}
 	
-	//Initializes a server with the default 2500 port
-	ServerConnection(){
-		this.accounts = new Account();
-		try {
-			this.server = new ServerSocket(serverPort);
-		} catch (IOException e) {
-			System.out.println("couldn't open a socket on port " + serverPort);
-			System.exit(0);
-			return;
-		}
+	//ClientConnection constructor using default port 2500
+	ClientConnection(String user, String password, String serverAddress){
+		//Initialization of user credentials
+		this.user = user;
+		this.password = password;
+		//Establishment of server connection
+		this.serverAddress = serverAddress;
+		this.connection = new Connection(this.serverAddress, this.serverPort);
 	}
-	public void run(){
-		String output = null;
+	/*commands are: register, login, battleReq, battleMove, infoReq, logout
+	 * 
+	 * sub commands
+	 * battleReq##<battleMode>##<army id>
+	 * battleMove##<action1>##<action2>## etc.
+	 *
+	 * response in form
+	 * register: SvrRes##<username>##true
+	 * login: SvrRes##<username>##<true/false>
+	 * battleReq: SvrRes##<username>##<battleMode>##<opponent>
+	 * battleMove: SvrRes##<username>##battle##<turnNumber>##<result1>##<result2>## etc.
+	 * infoReq: SvrRes##<username>##army:<number>##<unit1info>##<unit2info> etc.
+	 * 
+	 */
+
+	
+	//registers a user with the initialized information
+	public String[] register() throws IOException{
+		this.command = "register";
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//logs in user with presented parameters
+	public String[] login() throws IOException{
+		this.command = "login";
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	
+	//sends a battle request to the server, 
+	//will receive a reply request with non null opponent if successful
+	public String[] RequestBattle(String battleMode, int armyID) throws IOException{
+		/*
+		 * command in form:
+		 * battleReq##<battleMode>##<army id>
+		 */
+		this.command = "battleReq##"+battleMode+"##"+armyID;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//sends the move made by user in battle, any number of moves may be tacked onto
+	//the end of the message
+	public String[] BattleAction(ArrayList<String> battleActions) throws IOException{
+		/*
+		 * command in form:
+		 * battleMove##<action1>##<action2>## etc.
+		 * 
+		 * response in form:
+		 * SvrRes##<username>##battle##<turnNumber>##<result1>##<result2>## etc.
+		 */
+		this.command = "battleMove##";
+		for(String action : battleActions){
+			this.command = this.command + action + "##";
+		}
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to request information from the server on current armies and their composition
+	public String[] requestInfo() throws IOException{
+		/*
+		 * server response in form:
+		 * SvrRes##<username>##army:<number>##<unit1info>##<unit2info> etc.
+		 */
+		this.command = "infoReq";
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to request current information on the economy
+	public String[] requestInfoEcon() throws IOException{
+		this.command = "infoReqEcon";
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to purchase units from the store
+	public String[] purchaseEcon(int unitID) throws IOException{
+		/*
+		 * command in form:
+		 * purchase##<unitID>
+		 * 
+		 * Response:
+		 * purchase##<true/false>
+		 */
+		this.command = "purchase##" + unitID;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to send a message via chat
+	public String[] chatUp(String payload) throws IOException{
+		this.command = "chatUp##" + payload;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to add a friend to account
+	public String[] addFriend(String friend) throws IOException{
+		this.command = "friendOp##add##" + friend;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to remove a friend from the account
+	public String[] removeFriend(String friend) throws IOException{
+		this.command = "friendOp##delete##" + friend;
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+	//used to retrieve current friends list from server
+	public String[] displayFriend() throws IOException{
+		this.command = "friendOp##display";
+		this.result = connection.sendRecieve("UsrReq##"+this.user+"##"+this.password+"##"+this.command).split("##");
+		return this.result;
+	}
+}
+/*
+ * this class can, given a server and socket, send and receive data from a server
+ */
+class Connection{
+	public String serverName = null;
+	public int portNumber = 25000;
+	public Socket serverConnection = null;
+	public PrintWriter upload = null;
+	public BufferedReader download = null;
+	
+	
+	public Connection(String serverName, int portNumber){
+		this.serverName = serverName;
+		this.portNumber = portNumber;
 		
-		while(true){
-			Socket connection = null;
-			try {
-				connection = server.accept();
-			} catch (IOException e) {
-				System.out.println("failed to accept new connection");
-				continue;
-			}
-			System.out.println("accepted new connection from: " + connection);
-			
-			BufferedReader incomingData = null;
-			try {
-				incomingData = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			} catch (IOException e1) {
-				System.out.println("couldn't establish a connection");
-				continue;
-			}
-			
-			String sepInput[] = null;
-			try {
-				sepInput = incomingData.readLine().split("##");
-			
-				output = processRequest(sepInput);
-			} catch (Exception e) {
-				System.out.println("couldn't read from connection");
-			}
-	
-			DataOutputStream outgoingData = null;
-			try {
-				outgoingData = new DataOutputStream(connection.getOutputStream());
-				outgoingData.writeBytes(output);
-			} catch (IOException e) {
-				System.out.println("couldn't send to output stream");
-			}
-			
-			
-			
-			try {
-				incomingData.close();
-			
-				outgoingData.close();
-				connection.close();
-			} catch (IOException e) {
-				System.out.println("couldn't close connection properly");
-			}
-		}
 	}
+	
+	//will send a given string to a server and receive the response and convert back into ASCII characters
+	public String sendRecieve(String payload) throws IOException{
+		String serverPayload = null;
+		Socket serverConnection = null;
 
-	private String processRequest(String[] sepInput) throws Exception {
-		String user = null;
-		String password = null;
-		Object userAccount = null;
-		boolean purchase = false;
-		user = sepInput[1];
-		password = sepInput[2];
+		serverConnection = new Socket(this.serverName, this.portNumber);
+
+		PrintWriter upload = null;
+
+		upload = new PrintWriter(serverConnection.getOutputStream(), true);
+		upload.println(payload);
+
+		BufferedReader download = null;
+
+		download = new BufferedReader(new InputStreamReader(serverConnection.getInputStream()));
+		serverPayload = download.readLine();
 		
-			if(sepInput[3].equals("register")){
-				//create user account and return true if successful
-				return "SvrRes##"+user+"##"+accounts.register(user, password);
-				
-			} else if(sepInput[3].equals("login")){
-				//indicate that account exists and log user in
-				return "SvrRes##"+user+"##"+accounts.login(user, password);
-				
-			} else if(sepInput[3].equals("battleReq")){
-				//input user credentials, battle mode then army id to get the matched opponent
-				//check if the unit is in battle
-				String armies = battleManager.isInBattle(user);
-				if(!armies.equals("false")){
-					return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
-				}
-				//add player to queue
-				battleManager.addToQueue(user, sepInput[5]);
-				//call matchmaker on queue
-				battleManager.matchMaker(user, sepInput[5]);
-				//send back information on user and opponent armies
-				armies = battleManager.isInBattle(user);
-				if(armies.equals("false")){
-					return "SvrRes##"+user+"##"+sepInput[4]+"##wait";
-				}
-				return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
-				
-			} else if(sepInput[3].equals("battleMove")){
-				//input split string and receive a full set of battle instructions
-				//return "SvrRes##"+user+"##"+battleMove(sepInput);
-				
-			} else if(sepInput[3].equals("infoReq")){
-				//input info request, receive account info
-				return "SvrRes##" + user + "##" + accounts.displayArmy(user);
-				
-			} else if(sepInput[3].equals("infoReqEcon")){
-				//input economy request, receive available units for purchase
-				String display = markets.display();
-				return "SvrRes##"+user+"##"+display;
-				
-			} else if(sepInput[3].equals("purchase")){
-				//send a purchase request and receive a true/false result based on price of unit and available resources
-				purchase = markets.buy(user, Integer.parseInt(sepInput[4]), sepInput[5]);
-				return "SvrRes##"+user+"##purchase##"+purchase;
-
-			} else if(sepInput[3].equals("chatUp")){
-				//send a message to server
-				//chatUp(user, password, sepInput[4]);
-				return "SvrRes##"+user+"##chatUp##true";
-			} else if(sepInput[3].equals("friendOp")){
-				//check what operation must be done on the friends list with respect to the owner
-				if(sepInput[4].equals("display")){
-					//display all friends associated with user
-					ArrayList<String> friends = accounts.displayFriends(user);
-					String output = "SvrRes##"+user+"##friendOp";
-					for(String friend : friends){
-						output = output + "##" + friend;
-					}
-					return output;
-				} else if(sepInput[4].equals("add")){
-					//add friend relationship to db
-					return "SvrRes##"+user+"##friendOp##"+accounts.addFriend(user, sepInput[5]);
-				} else if(sepInput[4].equals("delete")){
-					//remove friend relationship to db
-					return "SvrRes##"+user+"##friendOp##"+accounts.deleteFriend(user, sepInput[5]);
-				}
-			}
-		return null;
+		upload.close();
+		download.close();
+		serverConnection.close();
+		
+		return serverPayload;
 	}
 }
