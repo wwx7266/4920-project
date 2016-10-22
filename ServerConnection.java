@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import Server.Account;
@@ -15,9 +16,13 @@ public class ServerConnection implements Runnable{
 	ServerSocket server = null;
 	int serverPort = 2500;
 	Account accounts = null;
+	Market markets = null;
+	BattleMgmt battleManager = null;
 	//Initializes a server with a specified port
-	ServerConnection(int serverPort, Account accounts){
+	ServerConnection(int serverPort, Account accounts, Market markets, BattleMgmt battleManager){
 		this.accounts = accounts;
+		this.markets = markets;
+		this.battleManager = battleManager;
 		try {
 			this.server = new ServerSocket(serverPort);
 		} catch (IOException e) {
@@ -64,10 +69,9 @@ public class ServerConnection implements Runnable{
 				sepInput = incomingData.readLine().split("##");
 			
 				output = processRequest(sepInput);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				System.out.println("couldn't read from connection");
 			}
-			//test portion
 	
 			DataOutputStream outgoingData = null;
 			try {
@@ -90,7 +94,7 @@ public class ServerConnection implements Runnable{
 		}
 	}
 
-	private String processRequest(String[] sepInput) {
+	private String processRequest(String[] sepInput) throws Exception {
 		String user = null;
 		String password = null;
 		Object userAccount = null;
@@ -99,7 +103,7 @@ public class ServerConnection implements Runnable{
 		password = sepInput[2];
 		
 			if(sepInput[3].equals("register")){
-				//create user account and return true if sucessful
+				//create user account and return true if successful
 				return "SvrRes##"+user+"##"+accounts.register(user, password);
 				
 			} else if(sepInput[3].equals("login")){
@@ -108,29 +112,43 @@ public class ServerConnection implements Runnable{
 				
 			} else if(sepInput[3].equals("battleReq")){
 				//input user credentials, battle mode then army id to get the matched opponent
-				String opponent = battleReq(user,password,sepInput[4],sepInput[5]);
-				return "SvrRes##"+user+"##"+sepInput[4]+"##"+opponent;
+				//check if the unit is in battle
+				String armies = battleManager.isInBattle(user);
+				if(!armies.equals("false")){
+					return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
+				}
+				//add player to queue
+				battleManager.addToQueue(user, sepInput[5]);
+				//call matchmaker on queue
+				battleManager.matchMaker(user, sepInput[5]);
+				//send back information on user and opponent armies
+				armies = battleManager.isInBattle(user);
+				if(armies.equals("false")){
+					return "SvrRes##"+user+"##"+sepInput[4]+"##wait";
+				}
+				return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
 				
 			} else if(sepInput[3].equals("battleMove")){
 				//input split string and receive a full set of battle instructions
-				return "SvrRes##"+user+"##"+battleMove(sepInput);
+				//return "SvrRes##"+user+"##"+battleMove(sepInput);
 				
 			} else if(sepInput[3].equals("infoReq")){
 				//input info request, receive account info
-				return "SvrRes##"+user+"##"+infoReq(sepInput);
+				return "SvrRes##" + user + "##" + accounts.displayArmy(user);
 				
 			} else if(sepInput[3].equals("infoReqEcon")){
 				//input economy request, receive available units for purchase
-				return "SvrRes##"+user+"##"+infoReqEcon(sepInput);
+				String display = markets.display();
+				return "SvrRes##"+user+"##"+display;
 				
 			} else if(sepInput[3].equals("purchase")){
 				//send a purchase request and receive a true/false result based on price of unit and available resources
-				purchase = purchaseUnit(user, password, sepInput[4]);
+				purchase = markets.buy(user, Integer.parseInt(sepInput[4]), sepInput[5]);
 				return "SvrRes##"+user+"##purchase##"+purchase;
 
 			} else if(sepInput[3].equals("chatUp")){
 				//send a message to server
-				chatUp(user, password, sepInput[4]);
+				//chatUp(user, password, sepInput[4]);
 				return "SvrRes##"+user+"##chatUp##true";
 			} else if(sepInput[3].equals("friendOp")){
 				//check what operation must be done on the friends list with respect to the owner

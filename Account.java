@@ -27,13 +27,14 @@ public class Account {
 		this.market = market;
 	}
 	//will register given user if not in database, if user is in database then will return false
-	public boolean register(String login, String pswrd){
+	public boolean register(String login, String pswrd) throws Exception{
 		String command = "INSERT INTO account (Login, Password, Level, gold) VALUES ('"+login+"', '"+pswrd+"', '0', '0')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
 			return false;
 		}
+		this.createArmy(login, login + "-firstArmy");
 		return true;
 	}
 	//will login user if exist in database and has matching password, if login fails, will return false
@@ -75,7 +76,7 @@ public class Account {
 	//changes the amount of gold in a person's account, returns false if not enough funds or sql error
 	public boolean changeFunds(String login, int amount) throws Exception{
 		int funds = getFunds(login);
-		if((amount < 0) && (funds < amount)){
+		if((amount < 0) && (funds < amount * -1)){
 			return false;
 		} else {
 			funds = funds + amount;
@@ -245,26 +246,29 @@ public class Account {
 	    	stat.close();
 	    	conn.close();
 	}
-	//army and unit functions
+	//army and unit functions pikeman 
 	public boolean createUnit(String login, String type, String army) throws Exception{
-		//type initialized, (type, attack, defense, EXP)
-		String[] type1 = {"Swordsman","2", "2","0"};
-		String[] type2 = {"Archer","3", "1","0"};
-		String[] type3 = {"Knight","1", "3","0"};
+		//type initialized, (type, attack, defense, HP, EXP)
+		String[] type1 = {"Swordsman","20", "10", "40", "0"};
+		String[] type2 = {"Pikeman", "25", "10", "40", "0"};
+		String[] type3 = {"Knight","20", "15", "50", "0"};
+		String[] type4 = {"Archer","25", "5","35", "0"};
 		String[] in = null;
 		//load unit type for input into DB
-		if(type.equals("Swordsman")){
+		if(type.equalsIgnoreCase("Swordsman")){
 			in = type1;
-		}else if(type.equals("Archer")){
+		}else if(type.equalsIgnoreCase("Pikeman")){
 			in = type2;
-		}else if(type.equals("Knight")){
+		}else if(type.equalsIgnoreCase("Knight")){
 			in = type3;
+		} else if(type.equalsIgnoreCase("Archer")){
+			in = type4;
 		} else {
 			return false;
 		}
 		//insert into db
 		int userID = getID(login);
-		String command = "INSERT INTO roster (Owner, UnitType, ArmyName, Attack, Defense, EXP) VALUES ('"+userID+"', '"+in[0]+"', '"+army+"', '"+in[1]+"', '"+in[2]+"', '"+in[3]+"')";
+		String command = "INSERT INTO roster (Owner, UnitType, ArmyName, Attack, Defense, HP, EXP) VALUES ('"+userID+"', '"+in[0]+"', '"+army+"', '"+in[1]+"', '"+in[2]+"', '"+in[3]+"', '"+in[4]+"')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -274,8 +278,29 @@ public class Account {
 		return true;
 	}
 	//creates an army given a starting unit type
-	public boolean createArmy(String login, String army, String initUnitType) throws Exception{
-		return createUnit(login, initUnitType, army);
+	public void createArmy(String login, String army) throws Exception{
+		//add 5 swordsmen, 5 pikemen, 3 knights and 3 archers
+		//16 units in total
+		createUnit(login, "Swordsman", army);
+		createUnit(login, "Swordsman", army);
+		createUnit(login, "Swordsman", army);
+		createUnit(login, "Swordsman", army);
+		createUnit(login, "Swordsman", army);
+		
+		createUnit(login, "Pikeman", army);
+		createUnit(login, "Pikeman", army);
+		createUnit(login, "Pikeman", army);
+		createUnit(login, "Pikeman", army);
+		createUnit(login, "Pikeman", army);
+		
+		createUnit(login, "Knight", army);
+		createUnit(login, "Knight", army);
+		createUnit(login, "Knight", army);
+		
+		createUnit(login, "Archer", army);
+		createUnit(login, "Archer", army);
+		createUnit(login, "Archer", army);
+		
 	}
 	//outputs a string representation of an army for a given user
 	public String displayArmy(String login) throws Exception{
@@ -301,13 +326,13 @@ public class Account {
 		} 
 		while(result.next()){
 			output = output + "##"+result.getString("UnitId")
-					+ "##" + result.getString("UnitName")
-					+ "##" + result.getString("UnitType")
-					+ "##" + result.getString("ArmyName")
-					+ "##" + result.getString("Attack")
-					+ "##" + result.getString("Defense")
-					+ "##" + result.getString("EXP");
-					
+					+ "#-#" + result.getString("UnitName")
+					+ "#-#" + result.getString("UnitType")
+					+ "#-#" + result.getString("ArmyName")
+					+ "#-#" + result.getString("Attack")
+					+ "#-#" + result.getString("HP")
+					+ "#-#" + result.getString("Defense")
+					+ "#-#" + result.getString("EXP");		
 		}
 		stat.close();
 		conn.close();
@@ -338,14 +363,21 @@ public class Account {
 				e.printStackTrace();
 			} 
 			while(result.next()){
-				String[] unit = new String[7];
+				String[] unit = {"", "", "", "", "", "", "", "", ""};
 				unit[0] = result.getString("UnitId");
 				unit[1] = result.getString("UnitName");
 				unit[2] = result.getString("UnitType");
+				//if unit name is null, return name as <UnitType>-<UnitId>
+				if(unit[1] == null){
+					unit[1] = unit[2] + "-" + unit[0];
+				}
 				unit[3] = result.getString("ArmyName");
-				unit[4] = result.getString("Attack");
-				unit[5] = result.getString("Defense");
-				unit[6] = result.getString("EXP");
+				//retrieve's owner's unique ID
+				unit[4] = result.getString("Owner");
+				unit[5] = result.getString("Attack");
+				unit[6] = result.getString("Defense");
+				unit[7] = result.getString("HP");
+				unit[8] = result.getString("EXP");
 				//exclude unit form battle if it is for sale
 				if(!market.isOnMarketList(Integer.parseInt(unit[0]))){
 					output.add(unit);
@@ -361,7 +393,7 @@ public class Account {
 	//specified, then that army is created with that unit as the sole occupant(useful when selling)
 	public boolean moveUnit(int unitID, String newOwner, String armyName) throws Exception{
 		
-		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "' AND ArmyName = '"+armyName+"' WHERE UnitId = '" + unitID + "'";
+		String command = "UPDATE roster SET Owner = '" + getID(newOwner) + "', ArmyName = '"+armyName+"' WHERE UnitId = '" + unitID + "'";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -446,9 +478,9 @@ public class Account {
 		}
 		return true;
 	}
-	public boolean levelUnit(int unitID, int attackInc, int defenseInc, int EXPDec){
+	public boolean levelUnit(int unitID, int attackInc, int defenseInc, int hpInc , int EXPDec){
 		//problem may come from '' around number
-		String command = "UPDATE roster SET Attack = Attack + '" + attackInc + "' AND Defense = Defense + '"+defenseInc+"' AND EXP = EXP - '"+EXPDec+"' WHERE UnitID = '" + unitID + "'";
+		String command = "UPDATE roster SET Attack = Attack + '" + attackInc + "', Defense = Defense + '"+defenseInc+"', HP = HP + '"+hpInc+"', EXP = EXP - '"+EXPDec+"' WHERE UnitID = '" + unitID + "'";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
@@ -476,6 +508,7 @@ public class Account {
 	    			+ "ArmyName varchar(30) BINARY NOT NULL, "
 	    			+ "Attack int NOT NULL, "
 	    			+ "Defense int NOT NULL, "
+	    			+ "HP int NOT NULL, "
 	    			+ "EXP int NOT NULL"
 	    			+ ")");
 	    	
