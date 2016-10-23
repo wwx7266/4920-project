@@ -57,9 +57,21 @@ public class BattleMgmt{
 	//
 	public String isInBattle(String login){
 		for(Battle battle : battleList){
-			if(battle.player1.getName().equals(login)){
+			if(battle.player1.getName().equals(login) || battle.player2.getName().equals(login)){
+				String returnBattle = "";
+				for(Unit unit : battle.army1){
+					//unitID#-#ownerLogin#-#unitToString
+					returnBattle += "##" + unit.getID() + "#-#" + unit.getOwner() + "#-#" + unit.toString();
+				}
+				for(Unit unit : battle.army2){
+					returnBattle += "##" + unit.getID() + "#-#" + unit.getOwner() + "#-#" + unit.toString();
+				}
+				return returnBattle;
+			}
+			/*if(battle.player1.getName().equals(login)){
 				//format of return:
-				//##<player1>=#<unit1>=#<unit2>=##etc..##<player2>=#<unit1>=#etc..
+				//##<player1>#-#<unit1>=#<unit2>=##etc..##<player2>=#<unit1>=#etc..
+				//##
 				//<unit> = unitID-#unit.toString
 				String returnBattle = "##" + login;
 				for(Unit unit : battle.army1){
@@ -83,7 +95,7 @@ public class BattleMgmt{
 					returnBattle += "=#" + unit;
 				}
 				return returnBattle;
-			}
+			}*/
 		}
 		return "false";
 	}
@@ -95,7 +107,7 @@ public class BattleMgmt{
 	public boolean addToQueue(String login, String armyName){
 		Player toAdd = null;
 		//check if already in queue
-		if(!isInQueue(login)){
+		if(isInQueue(login)){
 			return true;
 		}
 		//if not in queue, add
@@ -162,6 +174,7 @@ class Battle {
 	public Engine battleEngine = null;
 	
 	public BattleMgmt instance = null;
+	private String state = "turn over";
 	
 	public Battle(Player player1, Player player2, BattleMgmt instance) throws Exception{
 		this.instance = instance;
@@ -204,14 +217,24 @@ class Battle {
 		boolean battleSimulated = battleCond();
 		ArrayList<String> log = null;
 		if(player1.login.equals(login)){
-			log = battleLog1;
+			log = new ArrayList<String>(battleLog1);
+			this.battleLog1 = new ArrayList<String>();
 		} else {
-			log = battleLog2;
+			log = new ArrayList<String>(battleLog2);
+			this.battleLog2 = new ArrayList<String>();
 		}
 		if(battleSimulated){
+			this.state  = "turn over";
+			log = null;
 			return log;
 		}
-		log.add("wait");
+		if(this.unitBattle1 == null && this.unitBattle2 == null){
+			this.state = "turn over";
+			log = null;
+			return log;
+		}
+		this.state = "wait";
+		log = null;
 		return log;
 	}
 	//converts the unit type into a code for the engine
@@ -228,6 +251,9 @@ class Battle {
 			return -1;
 		}
 	}
+	public String getState(){
+		return state;
+	}
 }
 //represents a player's information in battle and is also used in matchmaking
 class Player {
@@ -237,7 +263,7 @@ class Player {
 	int armyStrength = 0;
 	int damage = 0;
 	int EXP = 0;
-	int passesInQueue = 0;
+	int passesInQueue = 1;
 	ArrayList<Unit> units = new ArrayList<Unit>();
 	Player(String login, String armyName, BattleMgmt instance) throws Exception{
 		this.login = login;
