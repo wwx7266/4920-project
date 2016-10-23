@@ -28,7 +28,7 @@ public class Account {
 	}
 	//will register given user if not in database, if user is in database then will return false
 	public boolean register(String login, String pswrd) throws Exception{
-		String command = "INSERT INTO account (Login, Password, Level, gold) VALUES ('"+login+"', '"+pswrd+"', '0', '0')";
+		String command = "INSERT INTO account (Login, Password, Level, gold) VALUES ('"+login+"', '"+pswrd+"', '0', '100000')";
 		try {
 			executeSQL(command);
 		} catch (Exception e) {
