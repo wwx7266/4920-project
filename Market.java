@@ -120,13 +120,13 @@ public class Market{
 		} 
 		while(result.next()){
 			output = "##" + result.getString("UnitId")
-					+ "##" + result.getString("UnitName")
-					+ "##" + result.getString("UnitType")
-					+ "##" + result.getString("ArmyName")
-					+ "##" + result.getString("Attack")
-					+ "##" + result.getString("Defense")
-					+ "##" + result.getString("EXP")
-					+ "##" + result.getString("Price");
+					+ "#-#" + result.getString("UnitName")
+					+ "#-#" + result.getString("UnitType")
+					+ "#-#" + result.getString("ArmyName")
+					+ "#-#" + result.getString("Attack")
+					+ "#-#" + result.getString("Defense")
+					+ "#-#" + result.getString("EXP")
+					+ "#-#" + result.getString("Price");
 					
 		}
 		stat.close();
