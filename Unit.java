@@ -1,3 +1,5 @@
+package Client;
+
 public class Unit {
 	private final int SWORDSMAN = 0;
 	private final int PIKEMAN = 1;
@@ -5,13 +7,14 @@ public class Unit {
 	private final int ARCHER = 3;
 	
 	private String name;
+	private int id;
 	private int type;
 	private int max_HP;
 	private int current_HP;
-	//private int BP;					// DO KNOW WHAT BATTLE POINTS IS
 	private int attack;
 	private int defense;
-	//private int level;				// NOT USED ATM
+	private int damageDelt;
+	private int unitsDestroyed;
 	private int exp;
 	private String owner;
 	private Boolean isDead;
@@ -24,9 +27,15 @@ public class Unit {
 		this.attack = attack;
 		this.defense = defense;
 		this.exp = 0;
+		this.damageDelt = 0;
+		this.unitsDestroyed = 0;
 		this.isDead = false;
 	}
 	
+	public int getID() {
+		return this.id;
+	}
+
 	public Unit(String name, int type, int hp, int attack, int defense){
 		this.name = name;
 		this.type = type;
@@ -34,18 +43,23 @@ public class Unit {
 		this.current_HP = hp;
 		this.attack = attack;
 		this.defense = defense;
-		this.exp = 0;		
+		this.exp = 0;
+		this.damageDelt = 0;
+		this.unitsDestroyed = 0;
 		this.isDead = false;
 	}
 	
-	public Unit(String name, int type, int hp, int attack, int defense, String owner){
+	public Unit(String name, int id, int type, int hp, int attack, int defense, String owner){
 		this.name = name;
+		this.id = id;
 		this.type = type;
 		this.max_HP = hp;
 		this.current_HP = hp;
 		this.attack = attack;
 		this.defense = defense;
-		this.exp = 0;		
+		this.exp = 0;
+		this.damageDelt = 0;
+		this.unitsDestroyed = 0;
 		this.owner = owner;
 		this.isDead = false;
 	}
@@ -97,6 +111,12 @@ public class Unit {
 	public int getExp(){
 		return exp;
 	}
+	public int getDamageDelt(){
+		return damageDelt;
+	}
+	public int getUnitsDestroyed(){
+		return unitsDestroyed;
+	}
 	
 	public void setOwner(String name){
 		this.owner = name;
@@ -106,12 +126,6 @@ public class Unit {
 	}
 	public void setType(int type){
 		this.type = type;
-	}
-	public void setStats( int hp, int atk, int def){
-		this.max_HP = hp;
-		this.current_HP = hp;
-		this.attack = atk;
-		this.defense = def;
 	}
 	public void set_Curr_HP(int x){
 		current_HP = x;
@@ -126,27 +140,4 @@ public class Unit {
 	public Boolean isDead(){
 		return isDead;
 	}
-	
-	
-/**
- * 	public void set_Max_HP(int x){
-		max_HP = x;
-	}
-	public void set_BP(int x ){
-		BP = x;
-	}
-	public void set_Attack(int x){
-		attack  = x;
-	}
-//	public void set_Defence(int x){
-//		Defence = x;
-//	}
-	public void set_Lv(int x){
-		level = x;
-	}
-	
-	private void less(){
-		current_HP--;
-	}
-**/
 }
