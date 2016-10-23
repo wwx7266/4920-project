@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 import Server.Account;
 
-public class ServerConnection implements Runnable{
+public class ServerConnection{
 	
 	ServerSocket server = null;
 	int serverPort = 2500;
@@ -108,59 +108,47 @@ public class ServerConnection implements Runnable{
 				
 			} else if(sepInput[3].equals("login")){
 				//indicate that account exists and log user in
-				return "SvrRes##"+user+"##"+accounts.login(user, password);
+				String output = null;
+				if(accounts.login(user, password)){
+					output = accounts.displayArmy(user);
+				} else {
+					output = "##Couldn't Login";
+				}
+				return "SvrRes##"+user+output;
 				
 			} else if(sepInput[3].equals("battleReq")){
 				//input user credentials, battle mode then army id to get the matched opponent
 				//check if the unit is in battle
-				String armies = battleManager.isInBattle(user);
-				if(!armies.equals("false")){
-					return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
-				}
-				//add player to queue
-				battleManager.addToQueue(user, sepInput[5]);
-				//call matchmaker on queue
-				battleManager.matchMaker(user, sepInput[5]);
-				//send back information on user and opponent armies
-				armies = battleManager.isInBattle(user);
-				if(armies.equals("false")){
-					return "SvrRes##"+user+"##"+sepInput[4]+"##wait";
-				}
-				return "SvrRes##"+user+"##"+sepInput[4]+"##"+ armies;
+				
+				return testBattleMatchMaker(user, sepInput[4], this.battleManager);
 				
 			} else if(sepInput[3].equals("battleMove")){
 				//input split string and receive a full set of battle instructions
-				//return is of form svrRes##user##<output>
-				//<output> = <messageLog>##<unitSummary>
+				//return is of form svrRes##user##<state>##<output>
+				//<output> = <unitSummary>##<messageLog>
 				//<messageLog> = <message1>-#<message2>-# etc...
 				//<unitSummary> = <unitID1>-#<owner1>-#<unit1Summary>=#<unitID2>-#<owner2>-#<unit2Summary>
-				String output = "";
-				for(String message : battleManager.getBattle(user).simulateBattle(user)){
-					output += message + "-#";
-				}
-				//remove trailing -#
-				output = output.substring(0, output.length()-2);
-				output += "##";
-				for(Unit unit : battleManager.getBattle(user).army1){
-					output += unit.getID() + "-#" + unit.getOwner() + "-#" + unit.getUnitDetail() + "=#";
-				}
-				//remove trailing +#
-				output = output.substring(0, output.length()-2);
-				return "SvrRes##"+user+"##"+output;
+				
+				return testBattleMove(user, sepInput[4], this.battleManager);
 				
 			} else if(sepInput[3].equals("infoReq")){
 				//input info request, receive account info
-				return "SvrRes##" + user + "##" + accounts.displayArmy(user);
+				return "SvrRes##" + user + accounts.displayArmy(user);
 				
 			} else if(sepInput[3].equals("infoReqEcon")){
 				//input economy request, receive available units for purchase
 				String display = markets.display();
-				return "SvrRes##"+user+"##"+display;
+				return "SvrRes##"+user+"##"+accounts.getGold(user)+"##"+display;
 				
 			} else if(sepInput[3].equals("purchase")){
 				//send a purchase request and receive a true/false result based on price of unit and available resources
 				purchase = markets.buy(user, Integer.parseInt(sepInput[4]), sepInput[5]);
-				return "SvrRes##"+user+"##purchase##"+purchase;
+				return "SvrRes##"+user+"##purchase##"+accounts.getGold(user)+"##"+purchase;
+
+			}else if(sepInput[3].equals("sell")){
+				//send a purchase request and receive a true/false result based on price of unit and available resources
+				purchase = markets.sell(user, Integer.parseInt(sepInput[5]), Integer.parseInt(sepInput[6]));
+				return "SvrRes##"+user+"##sell##"+accounts.getGold(user)+"##"+purchase;
 
 			} else if(sepInput[3].equals("chatUp")){
 				//send a message to server
@@ -185,5 +173,80 @@ public class ServerConnection implements Runnable{
 				}
 			}
 		return null;
+	}
+	//provokes the calculation of the battle and the creation of the output stream
+	private static String testBattleMove(String user, String unitID, BattleMgmt battleManagement){
+		String output = "";
+		int player = 0;
+		Battle battle = battleManagement.getBattle(user);
+		//select unit to be battled against
+		if(battle.player1.login.equals(user)){
+			for(Unit unit : battle.army1){
+				if(unit.getID() == Integer.parseInt(unitID)){
+					battle.unitBattle1 = unit;
+					player = 1;
+				}
+			}
+		} else {
+			for(Unit unit : battle.army2){
+				if(unit.getID() == Integer.parseInt(unitID)){
+					battle.unitBattle2 = unit;
+					player = 2;
+				}
+			}
+		}
+		//simulate battle
+		boolean firstLoop = true;
+		output = battleManagement.getBattle(user).getState() + "##";
+		for(String message : battleManagement.getBattle(user).simulateBattle(user)){
+			if(firstLoop){
+				output = battleManagement.getBattle(user).getState() + "##";
+				firstLoop = false;
+			}
+			output += message + "-#";
+		}
+		//add battle ended tag if battle has ended
+		
+		//remove trailing -#
+		output = output.substring(0, output.length()-2);
+		output += "##";
+		for(Unit unit : battleManagement.getBattle(user).army1){
+			output += unit.getID() + "-#" + unit.getOwner() + "-#" + unit.getUnitDetail() + "=#";
+		}
+		//remove trailing +#
+		output = output.substring(0, output.length()-2);
+		//add all messages
+		output += "##";
+		if(player == 1){
+			for(String message : battleManagement.getBattle(user).battleLog1){
+				output += message + "-#";
+			}
+			battleManagement.getBattle(user).battleLog1 = new ArrayList<String>();
+		} else {
+			for(String message : battleManagement.getBattle(user).battleLog2){
+				output += message + "-#";
+			}
+			battleManagement.getBattle(user).battleLog2 = new ArrayList<String>();
+		}
+		//remove trailing "-#"
+		output = output.substring(0, output.length()-2);
+		
+		return "SvrRes##"+user+"##"+output;
+	}
+	private static String testBattleMatchMaker(String user, String armyName, BattleMgmt battleManager) throws Exception{
+		String armies = battleManager.isInBattle(user);
+		if(!armies.equals("false")){
+			return "SvrRes##"+user+"##battleReq##"+ armies;
+		}
+		//add player to queue
+		battleManager.addToQueue(user, armyName);
+		//call matchmaker on queue
+		battleManager.matchMaker(user, armyName);
+		//send back information on user and opponent armies
+		armies = battleManager.isInBattle(user);
+		if(armies.equals("false")){
+			return "SvrRes##"+user+"##battleReq##wait";
+		}
+		return "SvrRes##"+user+"##battleReq"+ armies;
 	}
 }
