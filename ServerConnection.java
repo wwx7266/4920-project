@@ -130,7 +130,23 @@ public class ServerConnection implements Runnable{
 				
 			} else if(sepInput[3].equals("battleMove")){
 				//input split string and receive a full set of battle instructions
-				//return "SvrRes##"+user+"##"+battleMove(sepInput);
+				//return is of form svrRes##user##<output>
+				//<output> = <messageLog>##<unitSummary>
+				//<messageLog> = <message1>-#<message2>-# etc...
+				//<unitSummary> = <unitID1>-#<owner1>-#<unit1Summary>=#<unitID2>-#<owner2>-#<unit2Summary>
+				String output = "";
+				for(String message : battleManager.getBattle(user).simulateBattle(user)){
+					output += message + "-#";
+				}
+				//remove trailing -#
+				output = output.substring(0, output.length()-2);
+				output += "##";
+				for(Unit unit : battleManager.getBattle(user).army1){
+					output += unit.getID() + "-#" + unit.getOwner() + "-#" + unit.getUnitDetail() + "=#";
+				}
+				//remove trailing +#
+				output = output.substring(0, output.length()-2);
+				return "SvrRes##"+user+"##"+output;
 				
 			} else if(sepInput[3].equals("infoReq")){
 				//input info request, receive account info

@@ -137,6 +137,15 @@ public class BattleMgmt{
 		}
 		return toReturn;
 	}
+	//finds the battle object that a user is involved with and returns that battle object
+	public Battle getBattle(String user){
+		for(Battle battle : battleList){
+			if(battle.player1.login.equals(user) || battle.player2.login.equals(user)){
+				return battle;
+			}
+		}
+		return null;
+	}
 }
 
 class Battle {
@@ -180,12 +189,30 @@ class Battle {
 		return output;*/
 		return player.units;
 	}
-	public void simulateBattle(){
+	//if all orders have been recorded by the battle object and there are no results left to give out, simulate the battle
+	private boolean battleCond(){
 		//check if player both players have moves and both battle logs are empty
 		if(!(battleLog1.isEmpty() && battleLog2.isEmpty() && unitBattle1 != null && unitBattle2 != null)){
-			return;
+			return false;
 		}
 		battleEngine.battle(unitBattle1, unitBattle2);
+		return true;
+	}
+	//calls for battle to be simulated, returns the battle logs in both cases, if battle couldn't be simulated, returns that player's
+	//log with a wait string attached to the end
+	public ArrayList<String> simulateBattle(String login){
+		boolean battleSimulated = battleCond();
+		ArrayList<String> log = null;
+		if(player1.login.equals(login)){
+			log = battleLog1;
+		} else {
+			log = battleLog2;
+		}
+		if(battleSimulated){
+			return log;
+		}
+		log.add("wait");
+		return log;
 	}
 	//converts the unit type into a code for the engine
 	public int unitCode(String type){
@@ -224,7 +251,7 @@ class Player {
 		this.armyStrength = 0;
 		for(String[] unit : units){
 			// each unit is of the format (ID, Name, Type, ArmyName, ownerID, Attack, Defense, HP, EXP)
-			this.units.add(new Unit(unit[1],Integer.parseInt(unit[0]) , unitCode(unit[2]), Integer.parseInt(unit[7]), Integer.parseInt(unit[5]), Integer.parseInt(unit[6]), unit[4]));
+			this.units.add(new Unit(unit[1],Integer.parseInt(unit[0]) , unitCode(unit[2]), Integer.parseInt(unit[7]), Integer.parseInt(unit[5]), Integer.parseInt(unit[6]), this.login));
 			this.armyStrength += Integer.parseInt(unit[7]);
 		}
 	}
