@@ -1,493 +1,320 @@
-
-
-
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Random;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.event.*;
-
-
-
 
 public class SandBoxGUI extends JPanel {
 	
-	private JPanel pl;
-    private JLabel jcomp1;
-    private JLabel jcomp2;
-    private JTextArea jcomp3;
-    private JButton jcomp4;
-    private JList jcomp5;
-    private JList enemy_list;
-    private JTextArea jcomp6;
-    private JTextArea jcomp7;
-    private JTextArea jcomp8;
-    private JButton jcomp9;
-    private JButton jcomp10;
-    private JButton jcomp11;
-    private JTextField turn_num;
+	private final int RESX = 1280;
+	private final int RESY = 960;
+	
+	private final int MAXHP = 51;
+	private final int MAXATK = 8;
+	private final int MAXDEF = 8;
+	private final int HPMODIFIER = 10;
+	private final int ATKMODIFIER = 5;
+	private final int DEFMODIFIER = 3;
+	
+	private final int NUMBEROFUNITS = 10;
+	
+	private ArrayList<Unit> playerUnits;
+	private ArrayList<Unit> enemyUnits;
+	
+    private JButton resetArmyButton;
+    private JButton fightButton;
+    private JButton createCustomUnitButton;
+    private JButton quitButton;
+    private JTextArea gameLogTA;
+    private JLabel gameLogLabel;
+    private JList playerUnitList;
+    private JList enemyUnitList;
+    private JLabel enemyArmyLabel;
+    private JLabel yourArmyLabel;
+    private JLabel enemyUnitLabel;
+    private JLabel playerUnitLabel;
+    private JTextField enemyUnitSelected;
+    private JTextField playerUnitSelected;
+    private JLabel topLabel;
+    private Border line, margin, compound;
+    private JScrollPane scrollPanePlayer;
+    private JScrollPane scrollPaneEnemy;
+    private JScrollPane scroll;
     
+    private Engine engine;
+    
+    private JFrame thisFrame;
 
-    private InGameHandle gHandle;
-    private DefaultListModel my_listModel;
-    private DefaultListModel enemy_listModel;
-    private DefaultListModel armyModel;
-    private JScrollPane statePane;
-    private JScrollPane newstatePane;
-    private JList assigned_army;
-    private JPanel assigned_army_pane;
-    private GameTimer gTimer;
-    private Timer turn_timer;
-    private int turn_count;
-
-    public SandBoxGUI(JPanel p) {
-    	pl = p;
+    public SandBoxGUI(JFrame frame) {
+    	this.thisFrame = frame;
+    	init();
     	
-    	turn_count = 5;
+    	engine = new Engine(this);
+        //construct preComponents
+        //String[] playerUnitListItems = {"Archer - ATK: 10 DEF: 10 HP: 12", "Swordsman - ATK: 12 DEF: 10 HP: 12", "Knight - ATK: 15 DEF: 10 HP: 12", "Pikeman - ATK: 16 DEF: 10 HP: 12"};
+        //String[] enemyUnitListItems = {"Archer - ATK: 10 DEF: 10 HP: 12", "Swordsman - ATK: 12 DEF: 10 HP: 12", "Knight - ATK: 15 DEF: 10 HP: 12", "Pikeman - ATK: 16 DEF: 10 HP: 12"};
 
-        my_listModel = new DefaultListModel();
-        enemy_listModel = new DefaultListModel();
-
-        
         //construct components
-        jcomp1 = new JLabel ("Turns Left");
-        jcomp2 = new JLabel ("Turn Timer");
-        jcomp3 = new JTextArea (5, 5);
-        jcomp4 = new JButton ("End Turn");
-        jcomp5 = new JList (my_listModel);
-        enemy_list = new JList (enemy_listModel);
-        jcomp6 = new JTextArea (5, 5);
-        jcomp7 = new JTextArea (5, 5);
-        jcomp8 = new JTextArea (5, 5);
-        turn_num = new JTextField();
+        resetArmyButton = new JButton ("Reset Army");
+        fightButton = new JButton ("Simulate Fight");
+        createCustomUnitButton = new JButton ("Create Custom Unit");
+        quitButton = new JButton ("Quit");
+        gameLogTA = new JTextArea (10, 10);
+        //playerUnitList = new JList (playerUnitListItems);
+        //enemyUnitList = new JList (enemyUnitListItems);
+        initTextList();
         
-        jcomp9 = new JButton ("Generator Army");
-        jcomp10 = new JButton ("Assign");
-        jcomp11 = new JButton ("Attack");
+        gameLogLabel = new JLabel ("Game Log");
+        enemyArmyLabel = new JLabel ("Enemy Army (Select a Unit to Fight Against)");
+        yourArmyLabel = new JLabel ("Your Army (Select a Unit)");
+        enemyUnitLabel = new JLabel ("Enemy Unit Selected:");
+        playerUnitLabel = new JLabel ("Player Unit Selected:");
+        enemyUnitSelected = new JTextField (50);
+        playerUnitSelected = new JTextField (50);
+        topLabel = new JLabel ("TOP LABEL");
+        
 
-        gHandle = new InGameHandle(jcomp7);
-    	jcomp5.addMouseListener(new jListClick());
-    	enemy_list.addMouseListener(new jListClick());
-        jcomp4.addActionListener(new changeTurnAction());
-    	jcomp5.addListSelectionListener(new my_jListSelect());
-    	enemy_list.addListSelectionListener(new enemy_jListSelect());
-        jcomp9.addActionListener(new genOffenceAction());
-        jcomp10.addActionListener(new assignAction());
-        jcomp11.addActionListener(new attackAction());
-        jcomp11.addActionListener(new combatLogAction());
+        scrollPanePlayer = new JScrollPane (playerUnitList, 
+        		   JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPaneEnemy = new JScrollPane (enemyUnitList, 
+        		   JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll = new JScrollPane (gameLogTA, 
+        		   JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setViewportView(gameLogTA);
+        scrollPanePlayer.setViewportView(playerUnitList);
+        scrollPaneEnemy.setViewportView(enemyUnitList);
+        
+        //JList action listeners
+		playerUnitList.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+			      //int i = playerUnitList.getSelectedIndex();
+				if(playerUnitList.getSelectedValue() != null){
+					playerUnitSelected.setText((String) playerUnitList.getSelectedValue().toString());
+				}
+				else{
+					playerUnitSelected.setText("");
+				}
+			}
+		});
+		
+		enemyUnitList.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+			      //int i = enemyUnitList.getSelectedIndex();
+				if(enemyUnitList.getSelectedValue() != null){
+					enemyUnitSelected.setText((String) enemyUnitList.getSelectedValue().toString());
+				}
+				else{
+					enemyUnitSelected.setText("");
+				}
+			}
+		});
+        
+        //JButton action listeners
+        resetArmyButton.addActionListener(new ActionListener() { 
+        	  public void actionPerformed(ActionEvent e) {
+        		  init();
+        		  updateTextList();
+        	  } 
+        });
+        
+        fightButton.addActionListener(new ActionListener() { 
+        	public void actionPerformed(ActionEvent e) {
+        		Unit a,b;
+        		b = enemyUnits.get(enemyUnitList.getSelectedIndex());
+        		a = playerUnits.get(playerUnitList.getSelectedIndex());
+        		if(b.getCurrentHP()<=0 || a.getCurrentHP()<=0){
+        			JOptionPane.showMessageDialog(null,"One of the units you have selected is dead","Unable to start battle",JOptionPane.ERROR_MESSAGE);
+        		}
+        		else{
+	        		(new Thread() {
+	        			  public void run() {
+	        	        		Unit a,b;
+	        	        		b = enemyUnits.get(enemyUnitList.getSelectedIndex());
+	        	        		a = playerUnits.get(playerUnitList.getSelectedIndex());
+	        	        		engine.battle(a,b);
+	        	        		updateTextList();
+	        			  }    			  
+	        		}).start();
+        		}
+      	  } 
+        });
+        
+        createCustomUnitButton.addActionListener(new ActionListener() { 
+        	public void actionPerformed(ActionEvent e) {
+        		Unit temp = new Unit(1,1,1,1);
+                JFrame frame = new JFrame ("Create Custom Unit");
+                frame.setDefaultCloseOperation (JFrame.DISPOSE_ON_CLOSE);
+                frame.getContentPane().add (new CustomUnitGUI(frame,getThisClass()));
+                frame.pack();
+                frame.setVisible (true);
+      	  } 
+        });
+      
+        quitButton.addActionListener(new ActionListener() { 
+        	public void actionPerformed(ActionEvent e) { 
+        		thisFrame.dispose();
+    	  } 
+        });
+        
+        //change appearance
+        resetArmyButton.setBackground(new Color(59, 89, 182));
+        resetArmyButton.setForeground(Color.WHITE);
+        resetArmyButton.setFocusPainted(false);
+        resetArmyButton.setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        fightButton.setBackground(new Color(239, 29, 22));
+        fightButton.setForeground(Color.WHITE);
+        fightButton.setFocusPainted(false);
+        fightButton.setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        line = new LineBorder(Color.red);
+        margin = new EmptyBorder(5, 15, 5, 15);
+        compound = new CompoundBorder(line, margin);
+        fightButton.setBorder(compound);
+        
+        createCustomUnitButton.setBackground(new Color(59, 89, 182));
+        createCustomUnitButton.setForeground(Color.WHITE);
+        createCustomUnitButton.setFocusPainted(false);
+        createCustomUnitButton.setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        quitButton.setBackground(new Color(59,89,252));
+        quitButton.setForeground(Color.WHITE);
+        quitButton.setFocusPainted(false);
+        quitButton.setFont(new Font("Tahoma", Font.BOLD, 12));
+       
+        line = new LineBorder(Color.green);
+        margin = new EmptyBorder(5, 15, 5, 15);
+        compound = new CompoundBorder(line, margin);
+        quitButton.setBorder(compound);
+        
+        
+        gameLogTA.setBackground(Color.lightGray);
+        enemyUnitList.setBackground(Color.lightGray);
+        playerUnitList.setBackground(Color.lightGray);
+        enemyUnitSelected.setBackground(Color.red);
+        playerUnitSelected.setBackground(Color.blue);
+        setBackground(Color.white);
+        
+        //set components properties
+        resetArmyButton.setToolTipText ("Click to generate a preseet army");
+        fightButton.setToolTipText ("Start Battle");
+        createCustomUnitButton.setToolTipText ("Assign selected unit");
+        quitButton.setToolTipText ("Return to main menu");
+        gameLogTA.setEditable(false);
+        enemyUnitSelected.setEnabled (false);
+        playerUnitSelected.setEnabled (false);
 
         //adjust size and set layout
-        setPreferredSize (new Dimension (1280, 960));
+        //setPreferredSize (new Dimension (941, 727));
+        //setPreferredSize (new Dimension (1000, 720));
+        setPreferredSize (new Dimension (RESX, RESY));
         setLayout (null);
 
         //add components
-        add (jcomp1);
-        add (jcomp2);
-        add (jcomp3);
-        add (jcomp4);
-        add (jcomp5);
-        add (enemy_list);
-        add (jcomp6);
-        add (jcomp7);
-        add (jcomp8);
-        add (jcomp9);
-        add (jcomp10);
-        add (jcomp11);
-        add (turn_num);
+        add (resetArmyButton);
+        add (fightButton);
+        add (createCustomUnitButton);
+        add (quitButton);
+        //add (gameLogTA);
+        add (gameLogLabel);
+        //add (playerUnitList);
+        //add (enemyUnitList);
+        add (enemyArmyLabel);
+        add (yourArmyLabel);
+        add (enemyUnitLabel);
+        add (playerUnitLabel);
+        add (enemyUnitSelected);
+        add (playerUnitSelected);
+        add (topLabel);
+        add (scrollPanePlayer);
+        add (scrollPaneEnemy);
+        add (scroll);
 
+        
         //set component bounds (only needed by Absolute Positioning)
-        jcomp1.setBounds (25, 40, 100, 25);
-        jcomp2.setBounds (605, 40, 100, 25);
-        jcomp3.setBounds (25, 250, 175, 250);
-        jcomp4.setBounds (595, 435, 105, 60);
-        jcomp5.setBounds (220, 425, 350, 70);
-        enemy_list.setBounds (220, 90, 350, 70);
-        jcomp6.setBounds (160, 15, 405, 70);
-        jcomp7.setBounds (25, 180, 80, 50);
-        jcomp8.setBounds (25, 100, 80, 50);
-        jcomp9.setBounds (595, 240, 155, 60);
-        jcomp10.setBounds (595, 300, 105, 60);
-        jcomp11.setBounds (595, 370, 105, 60);
-        turn_num.setBounds (100, 40, 40, 20);
+        //int offsetx = 320;
+        //int offsety = 240;
+        int offsetx = RESX/4;
+        int offsety = RESY/4;
+        resetArmyButton.setBounds 	(20, 645 + offsety, 180, 60);
+        fightButton.setBounds 		(785 + offsetx, 332 + (offsety/2), 120, 60);
+        createCustomUnitButton.setBounds (225, 645 + offsety, 180, 60);
+        quitButton.setBounds 		(740 + offsetx, 645 + offsety, 180, 60);
         
-        turn_num.setText(Integer.toString(turn_count));
+        enemyArmyLabel.setBounds 	(335 + offsetx, 85 , 250, 25);
+        yourArmyLabel.setBounds 	(335 + offsetx, 410 + (offsety/2), 250, 25);
+        enemyUnitLabel.setBounds 	(390 + offsetx, 330 + (offsety/2), 250, 25);
+        playerUnitLabel.setBounds 	(390 + offsetx, 370 + (offsety/2), 250, 25);
+        enemyUnitSelected.setBounds (515 + offsetx, 330 + (offsety/2), 265, 25);
+        playerUnitSelected.setBounds(515 + offsetx, 370 + (offsety/2), 265, 25);
+        topLabel.setBounds 			(25, 5, 900, 80);
         
-       
-        JScrollPane combat_log_Pane = new JScrollPane();
-        combat_log_Pane.add(jcomp6);
-        combat_log_Pane.setBounds(160, 15, 405, 70);
-        combat_log_Pane.setViewportView(jcomp6);
-        add(combat_log_Pane);  
+        scroll.setBounds 			(20, 115, 360 + offsety, 510 + offsety);
+        scrollPanePlayer.setBounds 	(335 + offsetx, 440 + (offsety/2), 585, 180 + (offsety/2));
+        scrollPaneEnemy.setBounds 	(335 + offsetx, 115 , 585, 180 + (offsety/2));
         
-        JScrollPane my_listPane = new JScrollPane();
-        my_listPane.add(jcomp5);
-        my_listPane.setBounds(220, 425, 350, 70);
-        my_listPane.setViewportView(jcomp5);
-        add(my_listPane);
+        gameLogTA.setBounds 		(20, 115, 360 + offsety, 510 + offsety);
+        gameLogLabel.setBounds 		(20, 85, 100 + offsety, 25);
+        playerUnitList.setBounds 	(335 + offsetx, 440 + (offsety/2), 585, 180 + (offsety/2));
+        enemyUnitList.setBounds 	(335 + offsetx, 115 , 585, 180 + (offsety/2));
         
-        JScrollPane enemy_listPane = new JScrollPane();
-        enemy_listPane.add(enemy_list);
-        enemy_listPane.setBounds(220, 90, 350, 70);
-        enemy_listPane.setViewportView(enemy_list);
-        add(enemy_listPane);
-        
-        
-        gTimer = new GameTimer();
-        gTimer.setBounds(605, 90, 100, 140);
-        add(gTimer);
-        
-        turn_timer = new Timer();
-        turn_timer.schedule(new timeCheck(), 0, 1000);//check every 0.5 second
-
     }
-    
-    
-    
-    private class timeCheck extends TimerTask {
-        public void run() {
 
-            //exit and start next turn
-            if(gTimer.getCurrTime().equals("exit")) {
-    			
-            	gHandle.changeTurn(jcomp7);
-    			jcomp3.setText("");
-    			showJList(my_listModel);
-    	    	if(gHandle.getTurn().equals("defence_turn")) {
-    	    		gHandle.changeTurn(jcomp8);
-    	    		showJList(enemy_listModel);
-    	    		gHandle.setTurn("defence_turn");
-
-    	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-    	    		gHandle.changeTurn(jcomp8);
-    	    		showJList(enemy_listModel);
-    	    		gHandle.setTurn("offence_turn");
-    	    	}
-    			removeStatePane();
-    			
-    			gTimer.refresh();
-    			turn_count--;
-    			turn_num.setText(Integer.toString(turn_count));
-            }
-            if(turn_count == 0) {
-            	System.exit(0);
-            }
-        }
-    }
-    
-    
-    public void showJList(DefaultListModel listModel) {
-    	
-    	if(listModel.getSize() == 0) {
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		
-	    		ArrayList<Unit> defence = gHandle.getDefence();   		
-	    		for(int i=0; i<5; i++) {
-	    			listModel.addElement(defence.get(i).getUnitName());
-	    		}
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		
-	    		ArrayList<Unit> attacker = gHandle.getAttacker();    		
-	    		for(int i=0; i<5; i++) {
-	    			listModel.addElement(attacker.get(i).getUnitName());
-	    		}
-	    	}
-    	} else {
-    		
-
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		
-	    		int i;
-	    		ArrayList<Unit> defence = gHandle.getDefence();   		
-	    		for(i=0; i < defence.size(); i++) {
-
-	    			listModel.setElementAt(defence.get(i).getUnitName(), i);
-	    		}
-
-	    		if(i < listModel.getSize()) {
-		    		for(; i < listModel.getSize(); i++) {
-		    			listModel.setElementAt("null", i);
-		    		}
-	    		}
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		
-	    		int i;
-	    		ArrayList<Unit> attacker = gHandle.getAttacker();    		
-	    		for(i=0; i < attacker.size(); i++) {
-
-	    			listModel.setElementAt(attacker.get(i).getUnitName(), i);
-	    		}
-	    		
-	    		if(i < listModel.getSize()) {
-		    		for(; i < listModel.getSize(); i++) {
-		    			listModel.setElementAt("null", i);
-		    		}
-	    		}
-	    	}    		
+    public void init(){
+    	Random rand = new Random();
+    	Unit temp;
+    	playerUnits = new ArrayList<Unit>();
+    	enemyUnits = new ArrayList<Unit>();
+    	for(int ctr=1;ctr<NUMBEROFUNITS;ctr++){
+    		temp = new Unit(rand.nextInt(4),rand.nextInt(MAXHP)+HPMODIFIER,rand.nextInt(MAXATK)+ATKMODIFIER,rand.nextInt(MAXDEF)+DEFMODIFIER);
+    		temp.setOwner("Player");
+    		playerUnits.add(temp);
+    		temp = new Unit(rand.nextInt(4),rand.nextInt(MAXHP)+HPMODIFIER,rand.nextInt(MAXATK)+ATKMODIFIER,rand.nextInt(MAXDEF)+DEFMODIFIER);
+    		temp.setOwner("Enemy");
+    		enemyUnits.add(temp);
     	}
     }
     
-    public void showAssignedArmy() {
-    	
-    	assigned_army_pane = new JPanel();
-		armyModel = new DefaultListModel();	    		
-		assigned_army = new JList(armyModel);
-		assigned_army_pane.add(assigned_army);
-		assigned_army.setBounds (210, 360, 40, 20);
-		assigned_army_pane.setBounds (210, 360, 50, 30);
-    	
-		assigned_army.addMouseListener(new assignedArmyClick());
-		armyModel.removeAllElements();
-		if(armyModel.getSize() == 0) {
-			armyModel.addElement(gHandle.getAssignedArmy().getUnitName());
-		} else {
-			armyModel.setElementAt(gHandle.getAssignedArmy().getUnitName(), 0);
-		}
-		add(assigned_army_pane);
+    public void updateTextList(){
+		playerUnitList.setListData(playerUnits.toArray());
+		enemyUnitList.setListData(enemyUnits.toArray());
     }
     
-    public void removeStatePane() {
-    	if(statePane != null) {
-	        Container parent = statePane.getParent();
-	        parent.remove(statePane);
-	        parent.revalidate();
-	        parent.repaint();
-	        statePane = null;
-    	}
-    	if(newstatePane != null) {
-	        Container parent = newstatePane.getParent();
-	        parent.remove(newstatePane);
-	        parent.revalidate();
-	        parent.repaint();
-	        newstatePane = null;
-    	}
+    public void initTextList(){
+		playerUnitList = new JList(playerUnits.toArray());
+		enemyUnitList = new JList(enemyUnits.toArray());
     }
-
-	
-	private class changeTurnAction implements ActionListener{
-		public void actionPerformed(ActionEvent a){
-
-			gHandle.changeTurn(jcomp7);
-			jcomp3.setText("");
-			showJList(my_listModel);
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		gHandle.changeTurn(jcomp8);
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("defence_turn");
-
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		gHandle.changeTurn(jcomp8);
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("offence_turn");
-	    	}
-	    	
-			removeStatePane();
-			turn_count--;
-			turn_num.setText(Integer.toString(turn_count));
-		}
-	}
-	
-	private class assignAction implements ActionListener{
-		public void actionPerformed(ActionEvent a){
-			if(gHandle.getEnemyAssign() == false) {
-		    	if(gHandle.getTurn().equals("defence_turn")) {
-		    		gHandle.defenceTurnAssign(jcomp3);
-		    		
-		    		showAssignedArmy();
-	
-		    	} else if(gHandle.getTurn().equals("offence_turn")) {
-		    		
-		    		gHandle.offenceTurnAssign(jcomp3);
-		    		
-		    		showAssignedArmy();
-		    	}
-			} else {
-		    	if(gHandle.getTurn().equals("defence_turn")) {
-		    		gHandle.offenceTurnAssign(jcomp3);
-		    		
-		    		showAssignedArmy();
-	
-		    	} else if(gHandle.getTurn().equals("offence_turn")) {
-		    		
-		    		gHandle.defenceTurnAssign(jcomp3);
-		    		
-		    		showAssignedArmy();
-		    	}
-			}
-	    	showJList(my_listModel);
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		gHandle.setTurn("offence_turn");
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("defence_turn");
-
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		gHandle.setTurn("defence_turn");
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("offence_turn");
-	    	}
-			removeStatePane();
-		}
-	}
-	
-	private class attackAction implements ActionListener{
-		public void actionPerformed(ActionEvent a){
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		gHandle.defenceTurnAttack(jcomp3);
-
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		
-	    		gHandle.offenceTurnAttack(jcomp3);
-	    	}
-	    	showJList(my_listModel);
-	    	showJList(enemy_listModel);
-			removeStatePane();
-		}
-	}
-	
-	private class combatLogAction implements ActionListener{
-		public void actionPerformed(ActionEvent a){
-
-			jcomp6.replaceSelection(gHandle.getAttackLog());
-		}
-	}
-	
-	private class genOffenceAction implements ActionListener{
-		public void actionPerformed(ActionEvent a){
-
-			gHandle.random_input(jcomp3);
-			showJList(my_listModel);
-	    	if(gHandle.getTurn().equals("defence_turn")) {
-	    		gHandle.changeTurn(jcomp8);
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("defence_turn");
-
-	    	} else if(gHandle.getTurn().equals("offence_turn")) {
-	    		gHandle.changeTurn(jcomp8);
-	    		showJList(enemy_listModel);
-	    		gHandle.setTurn("offence_turn");
-	    	}
-		}
-	}
-	
-	
-	private class my_jListSelect implements ListSelectionListener{
-        public void valueChanged(ListSelectionEvent arg0) {
-            if (!arg0.getValueIsAdjusting()) {
-            	String army_name = jcomp5.getSelectedValue().toString();
-
-            	if(army_name != null && army_name.length() != 0) {
-            		gHandle.setClickedArmy(army_name);
-            		gHandle.setEnemyAssign(false);
-            	}            
-            }
-        }
-	}
-	
-	
-	private class enemy_jListSelect implements ListSelectionListener{
-        public void valueChanged(ListSelectionEvent arg0) {
-            if (!arg0.getValueIsAdjusting()) {
-            	String army_name = enemy_list.getSelectedValue().toString();
-
-            	if(army_name != null && army_name.length() != 0) {
-            		gHandle.setClickedArmy(army_name);
-            		gHandle.setEnemyAssign(true);
-            	}            
-            }
-        }
-	}
-
-	
-	private class jListClick implements MouseListener{
-	    public void mouseClicked(MouseEvent e){
-	        if(e.getClickCount()==2){
-
-	            JTextArea jta = new JTextArea();
-	            jta.setBounds(250, 250, 300, 100);
-	            jta.setText(gHandle.showArmyState(gHandle.getClickedArmy()));
-
-	            statePane = new JScrollPane();
-	            statePane.add(jta);
-	            statePane.setBounds(250, 250, 300, 100);
-	            statePane.setViewportView(jta);
-	            add(statePane); 
-	        }
-	    }
-
-		@Override
-		public void mouseEntered(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mouseExited(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mousePressed(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mouseReleased(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}		
-	}
-	
-	
-	private class assignedArmyClick implements MouseListener{
-	    public void mouseClicked(MouseEvent e){
-	        if(e.getClickCount()==2){
-
-	            JTextArea jtaa = new JTextArea();
-	            jtaa.setBounds(250, 250, 300, 100);
-	            Unit curr_unit = gHandle.getAssignedArmy();
-	            jtaa.setText(curr_unit.getUnitDetail(curr_unit.getUnitName()));
-
-	            newstatePane = new JScrollPane();
-	            newstatePane.add(jtaa);
-	            newstatePane.setBounds(250, 250, 300, 100);
-	            newstatePane.setViewportView(jtaa);
-	            add(newstatePane);
-	            armyModel.removeAllElements();
-	        }
-	    }
-
-		@Override
-		public void mouseEntered(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mouseExited(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mousePressed(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void mouseReleased(MouseEvent e) {
-			// TODO Auto-generated method stub
-			
-		}		
-	}
-
+    
+    public void addTextToLog(String text){
+    	updateTextList();
+    	gameLogTA.append(text);
+    	gameLogTA.setCaretPosition(gameLogTA.getDocument().getLength());
+    }
+    
+    public void forceTAUpdate(){
+    	
+    }
+    
+    public void addCustomUnit(Unit unit){
+    	playerUnits.add(unit);
+    	updateTextList();
+    }
+    
+    public SandBoxGUI getThisClass(){
+    	return this;
+    }
+    
+    public static void main (String[] args) {
+        JFrame frame = new JFrame ("War Game Economies");
+        frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().add (new SandBoxGUI(frame));
+        frame.pack();
+        frame.setVisible (true);
+    }
 }

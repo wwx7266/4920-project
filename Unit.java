@@ -107,6 +107,12 @@ public class Unit {
 	public void setType(int type){
 		this.type = type;
 	}
+	public void setStats( int hp, int atk, int def){
+		this.max_HP = hp;
+		this.current_HP = hp;
+		this.attack = atk;
+		this.defense = def;
+	}
 	public void set_Curr_HP(int x){
 		current_HP = x;
 	}

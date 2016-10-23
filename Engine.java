@@ -12,6 +12,10 @@ public class Engine {
 	private final double DISADVANTAGE = 0.9;
 
 	private final double HITRATE = 0.85;
+	private final double CRITICALHITRATE = 0.15;
+	private final double DODGERATE = 0.10;
+	
+	private final double DOUBLESTRIKECHANCE = 0.10;
 	
 	private Object obj;
 	
@@ -50,33 +54,33 @@ public class Engine {
 			if(temp){
 				turnPriorityUnit = unit1;
 				noPriorityUnit = unit2;
-				printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority");
+				printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority\n");
 			}else{
 				turnPriorityUnit = unit2;
 				noPriorityUnit = unit1;
-				printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority");
+				printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority\n");
 			}
 				
 		}else{
 			if(unit1.getType() == 3){
 				turnPriorityUnit = unit1;
 				noPriorityUnit = unit2;
-				printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority");
+				printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority\n");
 			}else if (unit2.getType() == 3){
 				turnPriorityUnit = unit2;
 				noPriorityUnit = unit1;
-				printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority");
+				printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority\n");
 			}
 			else{
 				Boolean temp = rand.nextBoolean();
 				if(temp){
 					turnPriorityUnit = unit1;
 					noPriorityUnit = unit2;
-					printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority");
+					printLog("Unit " + unit1.getTypeName() + "("  + unit1.getOwner() + ") has Turn Priority\n");
 				}else{
 					turnPriorityUnit = unit2;
 					noPriorityUnit = unit1;
-					printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority");
+					printLog("Unit " + unit2.getTypeName() + "("  + unit2.getOwner() +  ") has Turn Priority\n");
 				}
 			}
 		}
@@ -85,13 +89,13 @@ public class Engine {
 	
 	private void attack(Unit unit1,Unit unit2){
 		rand = new Random(System.currentTimeMillis());
-		if(rand.nextDouble()<=HITRATE){
+		if(rand.nextDouble()<HITRATE){
 			dealDamage(unit1,unit2);
 		}else{
-			printLog("The Unit " + unit1.getName() + "" + unit1.getTypeName() + " (" + unit1.getOwner() + ") attack missed");
+			printLog(unit1.getName() + "" + unit1.getTypeName() + " (" + unit1.getOwner() + ") attack missed\n");
 		}
 		if(unit2.isDead()){
-			printLog("Unit "+ unit2.getName() + "" + unit2.getTypeName() + " (" + unit2.getOwner() + ") has been defeated in battle");
+			printLog("Unit "+ unit2.getName() + "" + unit2.getTypeName() + " (" + unit2.getOwner() + ") has been defeated in battle\n");
 		}
 	}
 	
@@ -163,14 +167,25 @@ public class Engine {
 		}
 		damage = (int)(unit1.getAttack()*modifier);
 		damage = terrainModifier(damage);
+		damage = isCriticalHit(damage);
 		damage -= unit2.getDefence();
 		if(damage<0){
 			damage = 0;
 		}
 		unit2.dealDamage(damage);
 		printLog(unit1.getName() + "" + unit1.getTypeName() + " (" + unit1.getOwner() + ") deals " + damage + " damage to" +
-				unit2.getName() + "" + unit2.getTypeName() + " HP:" + unit2.getCurrentHP() + "/" + unit2.getMaxHP());
+				unit2.getName() + "" + unit2.getTypeName() + " HP:" + unit2.getCurrentHP() + "/" + unit2.getMaxHP() + "\n");
 				
+	}
+	
+	private int isCriticalHit(int damage){
+		if( rand.nextInt(100)<(CRITICALHITRATE*100) ){
+			printLog("CRITICAL HIT! ");
+			return (2 * damage);
+		}
+		else{
+			return damage;
+		}
 	}
 	
 	// unit a attacking unit b
@@ -196,7 +211,7 @@ public class Engine {
 	
 	// ONLY FOR USE WITH SANDBOX GUI
 	private void printLog(String text){
-		System.out.println(text);
+		System.out.print(text);
 		((SandBoxGUI) obj).addTextToLog(text);
 	}
 }
